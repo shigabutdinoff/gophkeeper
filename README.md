@@ -71,3 +71,24 @@ export SUPABASE_URL=https://<проект>.supabase.co SUPABASE_ANON_KEY=<клю
 export SYNADIA_ADMIN_CREDS=~/admin.creds SYNADIA_CLIENT_CREDS=~/client.creds
 go run ./cmd/sandbox cloud
 ```
+
+### Локальная песочница
+
+Нужен Docker с Compose 2.30 или новее, в Linux Docker Engine 28.3.3 или
+новее. Запускайте песочницу из корня исходников без `sudo`, от того же
+пользователя и в той же среде, что и клиент: песочница из WSL не пишет настройки
+для клиента в Windows.
+
+```sh
+export SUPABASE_URL=https://<проект>.supabase.co SUPABASE_ANON_KEY=<ключ>
+docker compose up -d --wait   # запуск; первый скачивает модули Go, выпускает сертификаты и секреты
+docker compose logs init      # что запуск сделал с файлом настроек
+docker compose stop           # остановка; данные, очередь и сертификаты остаются, файл настроек песочницы удаляется до запуска
+docker compose down -v        # сброс: удаляет очередь, сертификаты, секреты, кэш Go и файл настроек песочницы
+```
+
+### Проверка в живой песочнице
+
+```sh
+go test -tags e2e ./cmd/sandbox/e2e
+```
