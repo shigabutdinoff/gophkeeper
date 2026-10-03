@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 )
@@ -18,4 +19,29 @@ func writeFile(path string, data []byte) error {
 		}
 	}
 	return err
+}
+
+func chownLike(refs []string, paths ...string) error {
+	var uid, gid int
+	for _, ref := range refs {
+		info, err := os.Stat(ref)
+		if err != nil {
+			return fmt.Errorf("владелец каталога настроек: %w", err)
+		}
+		var ok bool
+		if uid, gid, ok = owner(info); !ok {
+			return nil
+		}
+		if uid != 0 {
+			break
+		}
+	}
+	errs := make([]error, len(paths))
+	for i, path := range paths {
+		errs[i] = os.Chown(path, uid, gid)
+	}
+	if err := errors.Join(errs...); err != nil {
+		return fmt.Errorf("владелец файла настроек: %w", err)
+	}
+	return nil
 }

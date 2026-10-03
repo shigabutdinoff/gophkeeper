@@ -1,0 +1,71 @@
+
+[TestPrepareSandbox - 1]
+[]string{"admin", "ca.pem", "cert.pem", "client", "key.pem", "passwords.conf"}
+файл настроек клиента записан: "<host>/gophkeeper/config.yaml"
+файл настроек "<host>/gophkeeper/config.yaml" уже содержит эти настройки
+# gophkeeper-sandbox: файл записан командой sandbox, повторный запуск его заменяет
+server: https://project.supabase.co
+app_key: ЗАГЛУШКА КЛЮЧА
+queue: tls://127.0.0.1:54222
+queue_user: client
+queue_password: <client>
+queue_inbox: _INBOX.pub
+queue_ca: |
+    <ca>
+
+ADMIN_PASSWORD: "<admin>"
+CLIENT_PASSWORD: "<client>"
+
+---
+
+[TestPrepareSandboxForeign - 1]
+в "<host>/gophkeeper/config.yaml" другие настройки, клиент продолжит работать с ними. Новые настройки лежат в "<host>/gophkeeper/config.sandbox.yaml"
+---
+
+[TestSandboxCerts - 1]
+87600h0m0s
+---
+
+[TestPrepareSandboxNoSupabase/SUPABASE_URL - 1]
+настройки песочницы: не заданы SUPABASE_URL
+---
+
+[TestPrepareSandboxNoSupabase/SUPABASE_ANON_KEY - 1]
+настройки песочницы: не заданы SUPABASE_ANON_KEY
+---
+
+[TestPrepareSandboxFailures/sandbox/cert.pem/ - 1]
+секреты песочницы
+---
+
+[TestPrepareSandboxFailures/sandbox/ca.pem/ - 1]
+секреты песочницы
+---
+
+[TestPrepareSandboxFailures/sandbox/admin/ - 1]
+секреты песочницы
+---
+
+[TestPrepareSandboxFailures/sandbox/client/ - 1]
+секреты песочницы
+---
+
+[TestPrepareSandboxFailures/sandbox/passwords.conf/ - 1]
+секреты песочницы
+---
+
+[TestPrepareSandboxFailures/sandbox/cert.pem - 1]
+настройки песочницы
+---
+
+[TestPrepareSandboxFailures/config/gophkeeper/config.yaml/ - 1]
+чтение файла настроек
+---
+
+[TestPrepareSandboxNewKey - 1]
+файл настроек клиента записан: "<host>/gophkeeper/config.yaml"
+---
+
+[TestPrepareSandboxPlainURL - 1]
+настройки песочницы: адрес Supabase "http://project.supabase.co" должен начинаться с "https://"
+---

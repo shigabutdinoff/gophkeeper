@@ -1,0 +1,12 @@
+
+[TestQueueClient - 1]
+nats: permissions violation: Permissions Violation for Publish to "$JS.API.CONSUMER.CREATE.CHANGES"
+nats: permissions violation: Permissions Violation for Publish to "$JS.API.DIRECT.GET.CHANGES"
+nats: permissions violation: Permissions Violation for Publish to "$JS.API.STREAM.DELETE.CHANGES"
+nats: permissions violation: Permissions Violation for Publish to "$JS.API.STREAM.MSG.DELETE.CHANGES"
+nats: permissions violation: Permissions Violation for Publish to "$JS.API.STREAM.MSG.GET.CHANGES"
+nats: permissions violation: Permissions Violation for Publish to "$JS.API.STREAM.PURGE.CHANGES"
+nats: permissions violation: Permissions Violation for Subscription to "_INBOX.>"
+nats: permissions violation: Permissions Violation for Subscription to "_INBOX.adm.>"
+nats: permissions violation: Permissions Violation for Subscription to "changes.>"
+---
