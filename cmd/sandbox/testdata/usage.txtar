@@ -1,0 +1,53 @@
+exec sandbox
+! stderr .
+cmp stdout help.txt
+
+exec sandbox --help
+! stderr .
+cmp stdout help.txt
+
+exec sandbox help cloud
+! stderr .
+cmp stdout cloud.txt
+
+! exec sandbox cloud stop
+! stdout .
+cmp stderr extra.txt
+
+! exec sandbox nosuch
+! stdout .
+cmp stderr unknown.txt
+
+! exec sandbox cloud --nosuch
+! stdout .
+cmp stderr flag.txt
+
+-- help.txt --
+Настройки клиента GophKeeper для проверки
+
+Использование:
+  go run ./cmd/sandbox [флаги]
+  go run ./cmd/sandbox [команда]
+
+Команды:
+  cloud       Подключить клиент к облачным Supabase и очереди изменений
+  help        Показать справку по команде
+
+Флаги:
+  -h, --help   показать справку по команде
+
+Подробнее о команде: "go run ./cmd/sandbox [команда] --help".
+-- cloud.txt --
+Подключить клиент к облачным Supabase и очереди изменений
+
+Использование:
+  go run ./cmd/sandbox cloud [флаги]
+
+Общие флаги:
+  -h, --help   показать справку по команде
+-- extra.txt --
+Ошибка: лишний аргумент "stop"
+-- unknown.txt --
+Ошибка: неизвестная команда "nosuch"
+-- flag.txt --
+Ошибка: неизвестный флаг "--nosuch"
