@@ -1,0 +1,13 @@
+exec git init -q src
+exec git -C src commit -q --allow-empty -m c1
+exec git -C src commit -q --allow-empty -m c2
+exec git -C src tag -a 27.0 -m 27.0
+exec git clone -q --depth 1 file://$WORK/src dst
+cd dst
+! exec buildnumber out 27.0
+! stdout .
+cmp stderr ../shallow.txt
+! exists out
+
+-- shallow.txt --
+Ошибка: история репозитория неполная, номер сборки не посчитать

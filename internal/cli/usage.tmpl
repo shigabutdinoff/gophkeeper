@@ -1,0 +1,14 @@
+Использование:{{if .Runnable}}
+  {{if .HasParent}}{{.Parent.CommandPath}} {{.Use}}{{else}}{{.CommandPath}}{{end}}{{if .HasAvailableFlags}} [флаги]{{end}}{{end}}{{if .HasAvailableSubCommands}}
+  {{.CommandPath}} [команда]
+
+Команды:{{range .Commands}}{{if (or .IsAvailableCommand (eq .Name "help"))}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}
+
+Флаги:
+{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}
+
+Общие флаги:
+{{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableSubCommands}}
+
+Подробнее о команде: "{{.CommandPath}} [команда] --help".{{end}}

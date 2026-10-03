@@ -1,0 +1,4 @@
+exec git -C $PROJECT check-ignore -q --no-index gophkeeper
+exec git -C $PROJECT check-ignore -q --no-index dist/gophkeeper-27.0-27A41-linux-amd64
+exec git -C $PROJECT check-ignore -q --no-index .idea/workspace.xml
+exec git -C $PROJECT check-ignore -q --no-index .buildnumber
