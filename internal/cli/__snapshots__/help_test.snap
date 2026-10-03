@@ -1,0 +1,110 @@
+
+[TestHelp/gophkeeper - 1]
+Клиент менеджера паролей GophKeeper
+
+Использование:
+  gophkeeper [флаги]
+  gophkeeper [команда]
+
+Команды:
+  completion  Вывести скрипт автодополнения для оболочки
+  help        Показать справку по команде
+
+Флаги:
+  -h, --help      показать справку по команде
+  -v, --version   показать версию, номер, дату и коммит сборки
+
+Подробнее о команде: "gophkeeper [команда] --help".
+
+---
+
+[TestMousetrap - 1]
+Это консольная программа.
+
+Запустите её из командной строки cmd.exe или PowerShell.
+
+---
+
+[TestHelp/gophkeeper_completion - 1]
+Выводит скрипт автодополнения команд gophkeeper для bash, zsh, fish или powershell.
+Как подключить скрипт, сказано в справке каждой оболочки.
+
+Использование:
+  gophkeeper completion [флаги]
+  gophkeeper completion [команда]
+
+Команды:
+  bash        Скрипт автодополнения для bash
+  fish        Скрипт автодополнения для fish
+  powershell  Скрипт автодополнения для powershell
+  zsh         Скрипт автодополнения для zsh
+
+Общие флаги:
+  -h, --help   показать справку по команде
+
+Подробнее о команде: "gophkeeper completion [команда] --help".
+
+---
+
+[TestHelp/gophkeeper_completion_bash - 1]
+Выводит скрипт автодополнения для bash. Подключить в текущем сеансе:
+
+  source <(gophkeeper completion bash)
+
+Использование:
+  gophkeeper completion bash [флаги]
+
+Общие флаги:
+  -h, --help   показать справку по команде
+
+---
+
+[TestHelp/gophkeeper_completion_fish - 1]
+Выводит скрипт автодополнения для fish. Подключить в текущем сеансе:
+
+  gophkeeper completion fish | source
+
+Использование:
+  gophkeeper completion fish [флаги]
+
+Общие флаги:
+  -h, --help   показать справку по команде
+
+---
+
+[TestHelp/gophkeeper_completion_powershell - 1]
+Выводит скрипт автодополнения для powershell. Подключить в текущем сеансе:
+
+  gophkeeper completion powershell | Out-String | Invoke-Expression
+
+Использование:
+  gophkeeper completion powershell [флаги]
+
+Общие флаги:
+  -h, --help   показать справку по команде
+
+---
+
+[TestHelp/gophkeeper_completion_zsh - 1]
+Выводит скрипт автодополнения для zsh. Подключить в текущем сеансе:
+
+  source <(gophkeeper completion zsh)
+
+Использование:
+  gophkeeper completion zsh [флаги]
+
+Общие флаги:
+  -h, --help   показать справку по команде
+
+---
+
+[TestHelp/gophkeeper_help - 1]
+Показать справку по команде
+
+Использование:
+  gophkeeper help [команда] [флаги]
+
+Общие флаги:
+  -h, --help   показать справку по команде
+
+---

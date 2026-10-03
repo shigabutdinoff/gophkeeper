@@ -1,0 +1,72 @@
+
+[TestErrors/gophkeeper_-x - 1]
+неизвестный флаг "-x"
+---
+
+[TestErrors/gophkeeper_-hx - 1]
+неизвестный флаг "-x"
+---
+
+[TestErrors/gophkeeper_--help=да - 1]
+неверное значение "да" флага "--help"
+---
+
+[TestErrors/gophkeeper_---x - 1]
+неверный синтаксис флага "---x"
+---
+
+[TestErrors/gophkeeper_nosuch - 1]
+неизвестная команда "nosuch"
+---
+
+[TestErrors/gophkeeper_--nosuch - 1]
+неизвестный флаг "--nosuch"
+---
+
+[TestErrors/gophkeeper_completion_nosuch - 1]
+неизвестная команда "nosuch"
+---
+
+[TestErrors/gophkeeper_completion_--nosuch - 1]
+неизвестный флаг "--nosuch"
+---
+
+[TestErrors/gophkeeper_completion_bash_nosuch - 1]
+лишний аргумент "nosuch"
+---
+
+[TestErrors/gophkeeper_completion_bash_--nosuch - 1]
+неизвестный флаг "--nosuch"
+---
+
+[TestErrors/gophkeeper_completion_fish_nosuch - 1]
+лишний аргумент "nosuch"
+---
+
+[TestErrors/gophkeeper_completion_fish_--nosuch - 1]
+неизвестный флаг "--nosuch"
+---
+
+[TestErrors/gophkeeper_completion_powershell_nosuch - 1]
+лишний аргумент "nosuch"
+---
+
+[TestErrors/gophkeeper_completion_powershell_--nosuch - 1]
+неизвестный флаг "--nosuch"
+---
+
+[TestErrors/gophkeeper_completion_zsh_nosuch - 1]
+лишний аргумент "nosuch"
+---
+
+[TestErrors/gophkeeper_completion_zsh_--nosuch - 1]
+неизвестный флаг "--nosuch"
+---
+
+[TestErrors/gophkeeper_help_nosuch - 1]
+неизвестная команда "nosuch"
+---
+
+[TestErrors/gophkeeper_help_--nosuch - 1]
+неизвестный флаг "--nosuch"
+---

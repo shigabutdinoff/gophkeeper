@@ -1,0 +1,34 @@
+package main
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/rogpeppe/go-internal/testscript"
+	"github.com/shigabutdinoff/gophkeeper/internal/snapstest"
+	"github.com/stretchr/testify/require"
+)
+
+const projectDir = "../.."
+
+func TestMain(m *testing.M) {
+	testscript.Main(snapstest.CleanM{M: m}, map[string]func(){"gophkeeper": main})
+}
+
+func TestScripts(t *testing.T) {
+	project, err := filepath.Abs(projectDir)
+	require.NoError(t, err, "путь к проекту не получен")
+	testscript.Run(t, testscript.Params{
+		Dir:                 "testdata",
+		UpdateScripts:       snapstest.UpdateScripts(),
+		RequireExplicitExec: true,
+		Setup: func(env *testscript.Env) error {
+			env.Vars = append(env.Vars, "PROJECT="+project,
+				"GIT_CONFIG_GLOBAL="+os.DevNull, "GIT_CONFIG_NOSYSTEM=1",
+				"GIT_AUTHOR_NAME=test", "GIT_AUTHOR_EMAIL=test@example.com",
+				"GIT_COMMITTER_NAME=test", "GIT_COMMITTER_EMAIL=test@example.com")
+			return nil
+		},
+	})
+}

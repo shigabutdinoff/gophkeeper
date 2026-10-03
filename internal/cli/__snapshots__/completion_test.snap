@@ -1,0 +1,75 @@
+
+[TestCompleteRequest/gophkeeper_-h - 1]
+:4
+
+Completion ended with directive: ShellCompDirectiveNoFileComp
+
+---
+
+[TestCompleteRequest/gophkeeper_help_completion - 1]
+bash       Скрипт автодополнения для bash
+fish       Скрипт автодополнения для fish
+powershell Скрипт автодополнения для powershell
+zsh        Скрипт автодополнения для zsh
+:4
+
+Completion ended with directive: ShellCompDirectiveNoFileComp
+
+---
+
+[TestCompleteRequest/gophkeeper - 1]
+completion Вывести скрипт автодополнения для оболочки
+help       Показать справку по команде
+:4
+
+Completion ended with directive: ShellCompDirectiveNoFileComp
+
+---
+
+[TestCompleteRequest/gophkeeper_completion - 1]
+bash       Скрипт автодополнения для bash
+fish       Скрипт автодополнения для fish
+powershell Скрипт автодополнения для powershell
+zsh        Скрипт автодополнения для zsh
+:4
+
+Completion ended with directive: ShellCompDirectiveNoFileComp
+
+---
+
+[TestCompleteRequest/gophkeeper_completion_bash - 1]
+:4
+
+Completion ended with directive: ShellCompDirectiveNoFileComp
+
+---
+
+[TestCompleteRequest/gophkeeper_completion_fish - 1]
+:4
+
+Completion ended with directive: ShellCompDirectiveNoFileComp
+
+---
+
+[TestCompleteRequest/gophkeeper_completion_powershell - 1]
+:4
+
+Completion ended with directive: ShellCompDirectiveNoFileComp
+
+---
+
+[TestCompleteRequest/gophkeeper_completion_zsh - 1]
+:4
+
+Completion ended with directive: ShellCompDirectiveNoFileComp
+
+---
+
+[TestCompleteRequest/gophkeeper_help - 1]
+completion Вывести скрипт автодополнения для оболочки
+help       Показать справку по команде
+:4
+
+Completion ended with directive: ShellCompDirectiveNoFileComp
+
+---

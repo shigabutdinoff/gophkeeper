@@ -1,0 +1,32 @@
+exec git init -q
+exec git add .
+exec git commit -qm первый
+
+exec make -s -f $PROJECT/Makefile build GORELEASER='sh goreleaser.sh'
+cmp stdout build-dev.txt
+
+exec make -s -f $PROJECT/Makefile release GORELEASER='sh goreleaser.sh'
+cmp stdout release-dev.txt
+
+exec git tag -a 27.0 -m 27.0
+
+exec make -s -f $PROJECT/Makefile build GORELEASER='sh goreleaser.sh'
+cmp stdout build-tag.txt
+
+exec make -s -f $PROJECT/Makefile release GORELEASER='sh goreleaser.sh'
+cmp stdout release-tag.txt
+
+cp goreleaser.sh untracked.sh
+exec make -s -f $PROJECT/Makefile build GORELEASER='sh goreleaser.sh'
+cmp stdout build-tag.txt
+
+-- goreleaser.sh --
+echo "goreleaser-stub: $*"
+-- build-dev.txt --
+goreleaser-stub: build --clean --single-target --auto-snapshot --snapshot -o gophkeeper
+-- release-dev.txt --
+goreleaser-stub: build --clean --auto-snapshot --snapshot
+-- build-tag.txt --
+goreleaser-stub: build --clean --single-target --auto-snapshot -o gophkeeper
+-- release-tag.txt --
+goreleaser-stub: build --clean --auto-snapshot
