@@ -51,3 +51,23 @@ gophkeeper <команда> --help        # справка по команде
 gophkeeper --version               # версия, номер, дата и коммит сборки
 gophkeeper completion <оболочка>   # скрипт автодополнения
 ```
+
+## Разработка
+
+В Supabase создайте проект и выключите подтверждение email: откройте
+Authentication, затем Sign In / Providers, снимите Confirm email и нажмите
+Save changes. Адрес проекта показан на его главной странице под названием,
+открытый ключ `anon` лежит в Project Settings, затем API Keys, на вкладке
+Legacy anon, service_role API keys.
+
+### Облачная очередь
+
+В Synadia Cloud заведите двух пользователей и скачайте их `.creds`: `admin`
+без ограничений и `client`, которому разрешены только публикация в
+`changes.>` и подписка на `_INBOX.pub.>`.
+
+```sh
+export SUPABASE_URL=https://<проект>.supabase.co SUPABASE_ANON_KEY=<ключ>
+export SYNADIA_ADMIN_CREDS=~/admin.creds SYNADIA_CLIENT_CREDS=~/client.creds
+go run ./cmd/sandbox cloud
+```

@@ -1,0 +1,21 @@
+
+[TestConnectCloud - 1]
+файл настроек клиента записан: "<dir>/config.yaml"
+файл настроек "<dir>/config.yaml" уже содержит эти настройки
+# gophkeeper-cloud: файл записан командой cloud, повторный запуск его заменяет
+server: https://project.supabase.co
+app_key: ЗАГЛУШКА КЛЮЧА
+queue: <queue>
+queue_creds_file: <dir>/cloud/client.creds
+queue_inbox: _INBOX.pub
+
+---
+
+[TestConnectCloudBroadClient - 1]
+клиент очереди может читать или менять чужие изменения, ограничьте его права по README
+---
+
+[TestCloudEnv - 1]
+не заданы SUPABASE_URL, SUPABASE_ANON_KEY, SYNADIA_ADMIN_CREDS, SYNADIA_CLIENT_CREDS
+адрес Supabase "http://project.supabase.co" должен начинаться с "https://"
+---

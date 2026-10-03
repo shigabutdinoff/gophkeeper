@@ -1,0 +1,12 @@
+
+[TestPlaceSettings - 1]
+файл настроек клиента записан: "<dir>/gophkeeper/config.yaml"
+---
+
+[TestPlaceSettings - 2]
+файл настроек "<dir>/gophkeeper/config.yaml" уже содержит эти настройки
+---
+
+[TestPlaceSettings - 3]
+в "<dir>/gophkeeper/config.yaml" другие настройки, клиент продолжит работать с ними. Новые настройки лежат в "<dir>/gophkeeper/config.sandbox.yaml"
+---
