@@ -36,8 +36,5 @@ func saveSettings(path string, data []byte) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return fmt.Errorf("каталог файла настроек: %w", err)
 	}
-	if err := writeFile(path, data); err != nil {
-		return fmt.Errorf("запись файла настроек: %w", err)
-	}
-	return nil
+	return writeFile(path, data)
 }

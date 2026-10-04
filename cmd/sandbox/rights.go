@@ -20,14 +20,15 @@ func checkClient(url string, cfg jetstream.StreamConfig, opts ...nats.Option) er
 	}
 	defer nc.Close()
 	probes := map[string]func(string) error{
-		cfg.Subjects[0]: func(s string) error { _, err := nc.SubscribeSync(s); return err },
+		clientSubject(cfg): func(s string) error { _, serr := nc.SubscribeSync(s); return serr },
 		jetstream.DefaultAPIPrefix + "STREAM.INFO." + cfg.Name: func(s string) error { return nc.Publish(s, nil) },
 	}
 	for subject, run := range probes {
-		if err := errors.Join(run(subject), nc.Flush()); err != nil {
+		if err = errors.Join(run(subject), nc.Flush()); err != nil {
 			return fmt.Errorf("проверка прав клиента очереди: %w", err)
 		}
-		if !strings.Contains(fmt.Sprint(nc.LastError()), strconv.Quote(subject)) {
+		last := nc.LastError()
+		if !errors.Is(last, nats.ErrPermissionViolation) || !strings.Contains(last.Error(), strconv.Quote(subject)) {
 			return errors.New("клиент очереди может читать или менять чужие изменения, ограничьте его права по README")
 		}
 	}

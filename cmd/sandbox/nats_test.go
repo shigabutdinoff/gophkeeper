@@ -2,10 +2,8 @@ package main
 
 import (
 	"context"
-	"os"
 	"path/filepath"
 	"slices"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -15,42 +13,38 @@ import (
 	natstest "github.com/nats-io/nats-server/v2/test"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
-	"github.com/shigabutdinoff/gophkeeper/cmd/sandbox/internal/sandboxtest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 type queue struct {
-	url, addr, ca, user, inbox string
-	admin                      jetstream.JetStream
+	url, addr, ca, pass string
+	admin               jetstream.JetStream
 }
 
 func startQueue(t *testing.T) queue {
-	cert, key := sandboxtest.Cert(t)
-	dir := t.TempDir()
-	conf := strings.NewReplacer("$$", "$",
-		"/etc/nats/sandbox/cert.pem", strconv.Quote(cert), "/etc/nats/sandbox/key.pem", strconv.Quote(key),
-	).Replace(parseModel(t).Configs["nats"].Content)
-	path := filepath.Join(dir, "nats.conf")
-	require.NoError(t, os.WriteFile(path, []byte(conf), 0o600), "конфиг очереди не записан")
-	require.NoError(t, os.Mkdir(filepath.Join(dir, "sandbox"), 0o700), "каталог секретов не создан")
-	passwords := "ADMIN_PASSWORD: \"admin-pass\"\nCLIENT_PASSWORD: \"client-pass\"\n"
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "sandbox", "passwords.conf"), []byte(passwords), 0o600), "пароли не записаны")
-	s, _ := natstest.RunServerWithConfigOverrides(path, func(o *server.Options) {
-		o.Host, o.Port, o.HTTPPort, o.StoreDir, o.NoSigs = "127.0.0.1", server.RANDOM_PORT, 0, t.TempDir(), true
-	}, nil)
+	state := t.TempDir()
+	require.NoError(t, sandboxSecrets(state), "секреты песочницы не созданы")
+	pass, err := readPass(state, clientUser)
+	require.NoError(t, err, "пароль клиента не прочитан")
+	opts, err := serverOptions(state, server.RANDOM_PORT)
+	require.NoError(t, err, "настройки очереди песочницы не собраны")
+	opts.NoSigs = true
+	s := natstest.RunServer(opts)
 	t.Cleanup(s.Shutdown)
-	q := queue{url: s.ClientURL(), addr: s.Addr().String(), ca: cert, user: "client", inbox: queueInbox}
-	_, q.admin = sandboxtest.Connect(t, q.url, q.ca, nil, nats.UserInfo("admin", "admin-pass"), nats.CustomInboxPrefix("_INBOX.adm"))
+	q := queue{url: s.ClientURL(), addr: s.Addr().String(), ca: filepath.Join(state, caFile), pass: string(pass)}
+	admin, err := sandboxUser(state, adminUser)
+	require.NoError(t, err, "пароль администратора не прочитан")
+	_, q.admin = connect(t, q.url, q.ca, nil, admin, nats.CustomInboxPrefix("_INBOX.adm"))
 	stream, err := loadStream()
-	require.NoError(t, err, "поток из модели не разбирается")
+	require.NoError(t, err, "поток не разбирается")
 	_, err = q.admin.CreateStream(context.Background(), stream)
 	require.NoError(t, err, "поток CHANGES не создан")
 	return q
 }
 
 func (q queue) client(t *testing.T, errs chan<- error, opts ...nats.Option) (*nats.Conn, jetstream.JetStream) {
-	return sandboxtest.Connect(t, q.url, q.ca, errs, append(opts, nats.UserInfo(q.user, "client-pass"), nats.CustomInboxPrefix(q.inbox))...)
+	return connect(t, q.url, q.ca, errs, append(opts, nats.UserInfo(clientUser, q.pass), nats.CustomInboxPrefix(queueInbox))...)
 }
 
 func TestQueueClient(t *testing.T) {
@@ -90,12 +84,12 @@ func TestQueueClient(t *testing.T) {
 	<-closed
 	snaps.MatchSnapshot(t, violations(errs))
 	assert.Never(t, func() bool {
-		stream, err := q.admin.Stream(ctx, "CHANGES")
-		if err != nil {
+		stream, serr := q.admin.Stream(ctx, "CHANGES")
+		if serr != nil {
 			return true
 		}
-		msg, err := stream.GetLastMsgForSubject(ctx, "changes.boris")
-		return err != nil || string(msg.Data) != "изменение Бориса"
+		msg, merr := stream.GetLastMsgForSubject(ctx, "changes.boris")
+		return merr != nil || string(msg.Data) != "изменение Бориса"
 	}, 500*time.Millisecond, 50*time.Millisecond, "изменение Бориса пропало из очереди")
 	stream, err := q.admin.Stream(ctx, "CHANGES")
 	require.NoError(t, err, "поток CHANGES недоступен")
@@ -114,7 +108,7 @@ func violations(errs <-chan error) string {
 func TestQueueRefusals(t *testing.T) {
 	t.Parallel()
 	q := startQueue(t)
-	_, err := nats.Connect(q.url, nats.UserInfo(q.user, "wrong-pass"), nats.RootCAs(q.ca))
+	_, err := nats.Connect(q.url, nats.UserInfo(clientUser, "wrong-pass"), nats.RootCAs(q.ca))
 	assert.ErrorIs(t, err, nats.ErrAuthorization, "очередь пустила клиента с неверным паролем")
-	sandboxtest.RefusesPlain(t, q.addr, q.user, "client-pass")
+	refusesPlain(t, q.addr, q.pass)
 }

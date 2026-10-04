@@ -47,7 +47,7 @@ func clientOnlyAdds() *server.Permissions {
 func cloudValues(t *testing.T) cloudConfig {
 	creds := filepath.Join(t.TempDir(), "client.creds")
 	require.NoError(t, os.WriteFile(creds, []byte("ЗАГЛУШКА CREDS\n"), 0o600), "учётные данные не записаны")
-	return cloudConfig{URL: "https://project.supabase.co", Key: "ЗАГЛУШКА КЛЮЧА", ClientCreds: creds}
+	return cloudConfig{Supabase: supabaseConfig{URL: "https://project.supabase.co", Key: "ЗАГЛУШКА КЛЮЧА"}, ClientCreds: creds}
 }
 
 func TestConnectCloud(t *testing.T) {
@@ -99,16 +99,16 @@ func TestConnectCloudNoCreds(t *testing.T) {
 
 func TestCloudEnv(t *testing.T) {
 	clearCloudEnv(t)
-	_, err := cloudEnv()
+	_, err := parseEnv[cloudConfig]()
 	require.Error(t, err, "пустое окружение принято")
 	t.Setenv(supabaseURL, "http://project.supabase.co")
 	t.Setenv(supabaseKey, "ключ")
 	t.Setenv(adminCreds, "admin.creds")
 	t.Setenv(clientCreds, "client.creds")
-	_, plain := cloudEnv()
+	_, plain := parseEnv[cloudConfig]()
 	require.Error(t, plain, "адрес без HTTPS принят")
 	t.Setenv(supabaseURL, "https://project.supabase.co")
-	v, ok := cloudEnv()
+	v, ok := parseEnv[cloudConfig]()
 	require.NoError(t, ok, "полное окружение отклонено")
 	assert.Equal(t, "client.creds", v.ClientCreds, "окружение прочитано не так")
 	snaps.MatchSnapshot(t, err.Error(), plain.Error())

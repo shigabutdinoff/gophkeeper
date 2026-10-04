@@ -24,8 +24,8 @@ func TestPlaceSettings(t *testing.T) {
 	require.NoError(t, err, "файл клиента не прочитан")
 	assert.Equal(t, string(want), string(got), "файл клиента не совпал с настройками песочницы")
 	if runtime.GOOS != "windows" {
-		info, err := os.Stat(clientPath)
-		require.NoError(t, err, "файл клиента не найден")
+		info, serr := os.Stat(clientPath)
+		require.NoError(t, serr, "файл клиента не найден")
 		assert.Equal(t, os.FileMode(0o600), info.Mode().Perm(), "файл клиента доступен другим")
 	}
 	snaps.MatchSnapshot(t, maskDir(msg.String()))

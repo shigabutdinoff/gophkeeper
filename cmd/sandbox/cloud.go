@@ -17,7 +17,7 @@ type queueAccess struct {
 }
 
 func cloud(cmd *cobra.Command, _ []string) error {
-	c, err := cloudEnv()
+	c, err := parseEnv[cloudConfig]()
 	if err != nil {
 		return err
 	}
@@ -30,8 +30,7 @@ func cloud(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	_, err = fmt.Fprintln(cmd.OutOrStdout(), "облако подготовлено,", msg)
-	return err
+	return report(cmd, "облако подготовлено,", msg)
 }
 
 func connectCloud(ctx context.Context, c cloudConfig, p sandboxPaths, q queueAccess) (placement, error) {
@@ -39,7 +38,7 @@ func connectCloud(ctx context.Context, c cloudConfig, p sandboxPaths, q queueAcc
 	if err != nil {
 		return placement{}, fmt.Errorf("учётные данные клиента очереди: %w", err)
 	}
-	if err := prepareQueue(ctx, q); err != nil {
+	if err = prepareQueue(ctx, q); err != nil {
 		return placement{}, err
 	}
 	data, err := saveCloud(c, q.URL, p.state, creds)

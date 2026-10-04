@@ -6,8 +6,9 @@ import (
 	"testing"
 
 	"github.com/rogpeppe/go-internal/testscript"
-	"github.com/shigabutdinoff/gophkeeper/internal/snapstest"
 	"github.com/stretchr/testify/require"
+
+	"github.com/shigabutdinoff/gophkeeper/internal/snapstest"
 )
 
 const projectDir = "../.."
