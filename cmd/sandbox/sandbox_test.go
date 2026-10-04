@@ -78,6 +78,23 @@ func TestSandboxSettings(t *testing.T) {
 	})
 }
 
+func TestRemoveMarked(t *testing.T) {
+	dir := t.TempDir()
+	files := map[string][]byte{"sandbox": marked("sandbox", []byte("песочница\n")), "cloud": marked("cloud", []byte("облако\n")),
+		"own": []byte("личное\n")}
+	for name, data := range files {
+		require.NoError(t, os.WriteFile(filepath.Join(dir, name), data, 0o600), "файл %q не записан", name)
+	}
+	for _, name := range []string{"sandbox", "cloud", "own", "нет"} {
+		require.NoError(t, removeMarked(filepath.Join(dir, name)), "файл %q не проверен", name)
+	}
+	assert.NoFileExists(t, filepath.Join(dir, "sandbox"), "файл песочницы не удалён")
+	assert.FileExists(t, filepath.Join(dir, "cloud"), "файл облака удалён")
+	assert.FileExists(t, filepath.Join(dir, "own"), "личный файл удалён")
+	require.NoError(t, os.Mkdir(filepath.Join(dir, "каталог"), 0o700), "каталог не создан")
+	assert.Error(t, removeMarked(filepath.Join(dir, "каталог")), "каталог принят за файл")
+}
+
 func TestSandboxCerts(t *testing.T) {
 	state := t.TempDir()
 	require.NoError(t, sandboxSecrets(state), "секреты песочницы не созданы")

@@ -31,6 +31,12 @@ func newRoot(out, errOut io.Writer) *cobra.Command {
 	root.AddCommand(&cobra.Command{
 		Use: "cloud", Short: "Подключить клиент к облачным Supabase и очереди изменений", Args: cli.NoArgs, RunE: cloud,
 	}, &cobra.Command{
+		Use: "up", Short: "Запустить локальную песочницу в фоне и записать настройки клиента", Args: cli.NoArgs, RunE: up,
+	}, &cobra.Command{
+		Use: "down", Short: "Остановить локальную песочницу, сохранив её данные", Args: cli.NoArgs, RunE: down,
+	}, &cobra.Command{
+		Use: "reset", Short: "Остановить локальную песочницу и удалить её данные и настройки", Args: cli.NoArgs, RunE: reset,
+	}, &cobra.Command{
 		Use: "serve", Short: "Обслуживать очередь песочницы", Hidden: true, Args: cli.NoArgs, RunE: serve,
 	})
 	cli.Localize(root)

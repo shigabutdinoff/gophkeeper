@@ -37,3 +37,9 @@ func sandboxUser(state, user string) (nats.Option, error) {
 		return errors.Join(nats.UserInfo(user, string(pass))(o), ca(o), nats.Timeout(queueTimeout)(o))
 	}, nil
 }
+
+func sandboxAccess(state string) (queueAccess, error) {
+	admin, err := sandboxUser(state, adminUser)
+	client, cerr := sandboxUser(state, clientUser)
+	return queueAccess{sandboxQueue, admin, client}, errors.Join(err, cerr)
+}

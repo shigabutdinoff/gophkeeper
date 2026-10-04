@@ -143,6 +143,6 @@ func TestCheckClientPartlyDenied(t *testing.T) {
 	})
 	cfg, err := loadStream()
 	require.NoError(t, err, "поток изменений не прочитан")
-	err = checkClient(url, cfg, nats.UserInfo("client", "client-pass"))
+	err = checkClient(context.Background(), url, cfg, nats.UserInfo("client", "client-pass"))
 	assert.Error(t, err, "клиент с правом запросов к JetStream принят")
 }

@@ -3,12 +3,14 @@ package main
 import (
 	"errors"
 	"fmt"
+	"os/signal"
+	"syscall"
 
 	"github.com/nats-io/nats-server/v2/server"
 	"github.com/spf13/cobra"
 )
 
-func serve(*cobra.Command, []string) error {
+func serve(cmd *cobra.Command, _ []string) error {
 	p, err := paths(sandboxName)
 	if err != nil {
 		return err
@@ -32,6 +34,9 @@ func serve(*cobra.Command, []string) error {
 		return err
 	}
 	defer closeStop()
+	ctx, stop := signal.NotifyContext(cmd.Context(), syscall.SIGQUIT)
+	defer stop()
+	go func() { <-ctx.Done(); s.Shutdown() }()
 	s.WaitForShutdown()
 	return nil
 }
