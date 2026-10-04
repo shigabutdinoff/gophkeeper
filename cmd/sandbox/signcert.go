@@ -11,7 +11,8 @@ import (
 
 const certLifetime = 87600 * time.Hour
 
-func signCert(tmpl, parent *x509.Certificate, signer *ecdsa.PrivateKey) (*x509.Certificate, *ecdsa.PrivateKey, error) {
+func signCert(tmpl, parent *x509.Certificate,
+	signer *ecdsa.PrivateKey) (*x509.Certificate, *ecdsa.PrivateKey, error) {
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		return nil, nil, err

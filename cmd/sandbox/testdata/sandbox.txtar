@@ -1,0 +1,41 @@
+exec sandbox up
+stdout 'песочница запущена'
+exists $CONFIG/gophkeeper/config.yaml
+exists $CONFIG/gophkeeper/sandbox/sandbox.pid
+cp $CONFIG/gophkeeper/sandbox/cert.pem cert.before
+
+exec sandbox up
+stdout 'песочница уже запущена'
+
+publish changes.anna
+stdout '^1$'
+
+exec sandbox down
+stdout 'песочница остановлена'
+
+exec sandbox down
+stdout 'песочница не запущена'
+
+exec sandbox up
+stdout 'песочница запущена'
+cmp $CONFIG/gophkeeper/sandbox/cert.pem cert.before
+
+publish changes.anna
+stdout '^2$'
+
+exec sandbox reset
+stdout 'песочница остановлена'
+stdout 'песочница сброшена'
+! exists $CONFIG/gophkeeper/sandbox
+! exists $CONFIG/gophkeeper/config.yaml
+
+cp own.yaml $CONFIG/gophkeeper/config.yaml
+exec sandbox up
+exists $CONFIG/gophkeeper/config.sandbox.yaml
+
+exec sandbox reset
+! exists $CONFIG/gophkeeper/config.sandbox.yaml
+cmp $CONFIG/gophkeeper/config.yaml own.yaml
+
+-- own.yaml --
+server: https://example.com
