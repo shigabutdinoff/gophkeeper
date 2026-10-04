@@ -3,39 +3,29 @@ package main
 import (
 	"crypto/rand"
 	"errors"
-	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 )
 
-func sandboxSecrets(state string) ([]byte, error) {
-	if _, err := once(filepath.Join(state, "cert.pem"), func() ([]byte, error) { return issueCerts(state) }); err != nil {
-		return nil, err
+func sandboxSecrets(state string) error {
+	_, err := os.Stat(filepath.Join(state, certFile))
+	if errors.Is(err, fs.ErrNotExist) {
+		err = issueCerts(state)
 	}
-	admin, err := once(filepath.Join(state, "admin"), password)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	client, err := once(filepath.Join(state, "client"), password)
-	if err != nil {
-		return nil, err
+	if err = once(filepath.Join(state, adminUser)); err != nil {
+		return err
 	}
-	conf := fmt.Appendf(nil, "ADMIN_PASSWORD: %q\nCLIENT_PASSWORD: %q\n", admin, client)
-	return client, writeFile(filepath.Join(state, "passwords.conf"), conf)
+	return once(filepath.Join(state, clientUser))
 }
 
-func once(path string, create func() ([]byte, error)) ([]byte, error) {
+func once(path string) error {
 	data, err := os.ReadFile(path)
 	if len(data) > 0 || (err != nil && !errors.Is(err, fs.ErrNotExist)) {
-		return data, err
+		return err
 	}
-	if data, err = create(); err == nil {
-		err = writeFile(path, data)
-	}
-	return data, err
-}
-
-func password() ([]byte, error) {
-	return []byte(rand.Text()), nil
+	return writeFile(path, []byte(rand.Text()))
 }

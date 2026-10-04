@@ -1,6 +1,0 @@
-
-[TestHomeEnv - 1]
-HOME=<home>
-USERPROFILE=<home>
-XDG_CONFIG_HOME=<home>/.config
----

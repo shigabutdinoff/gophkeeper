@@ -5,8 +5,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/shigabutdinoff/gophkeeper/internal/cli"
 	"github.com/spf13/cobra"
+
+	"github.com/shigabutdinoff/gophkeeper/internal/cli"
 )
 
 const displayName = "go run ./cmd/sandbox"
@@ -30,7 +31,7 @@ func newRoot(out, errOut io.Writer) *cobra.Command {
 	root.AddCommand(&cobra.Command{
 		Use: "cloud", Short: "Подключить клиент к облачным Supabase и очереди изменений", Args: cli.NoArgs, RunE: cloud,
 	}, &cobra.Command{
-		Use: "init", Short: "Подготовить песочницу в контейнере init", Hidden: true, Args: cli.NoArgs, RunE: sandboxInit,
+		Use: "serve", Short: "Обслуживать очередь песочницы", Hidden: true, Args: cli.NoArgs, RunE: serve,
 	})
 	cli.Localize(root)
 	return root

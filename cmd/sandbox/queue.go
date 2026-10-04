@@ -22,7 +22,7 @@ func prepareQueue(ctx context.Context, q queueAccess) error {
 		return fmt.Errorf("подключение к очереди: %w", err)
 	}
 	defer nc.Close()
-	if err := ensureStream(ctx, nc, cfg); err != nil {
+	if err = ensureStream(ctx, nc, cfg); err != nil {
 		return fmt.Errorf("поток изменений: %w", err)
 	}
 	return checkClient(q.URL, cfg, q.Client)
@@ -31,11 +31,11 @@ func prepareQueue(ctx context.Context, q queueAccess) error {
 func ensureStream(ctx context.Context, nc *nats.Conn, cfg jetstream.StreamConfig) error {
 	js, err := jetstream.New(nc, jetstream.WithDefaultTimeout(queueTimeout))
 	if err != nil {
-		return err
+		return fmt.Errorf("JetStream: %w", err)
 	}
 	_, err = js.CreateStream(ctx, cfg)
-	if errors.Is(err, jetstream.ErrStreamNameAlreadyInUse) {
-		return nil
+	if err != nil && !errors.Is(err, jetstream.ErrStreamNameAlreadyInUse) {
+		return fmt.Errorf("создание потока очереди: %w", err)
 	}
-	return err
+	return nil
 }

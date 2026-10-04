@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/rogpeppe/go-internal/testscript"
+
 	"github.com/shigabutdinoff/gophkeeper/internal/snapstest"
 )
 
