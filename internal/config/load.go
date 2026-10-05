@@ -12,14 +12,6 @@ import (
 // File задаёт имя файла настроек клиента в каталоге Dir.
 const File = "config.yaml"
 
-// Settings содержит настройки клиента для связи с сервером.
-type Settings struct {
-	// Server задаёт адрес сервера.
-	Server string `yaml:"server"`
-	// AppKey задаёт открытый ключ приложения на сервере.
-	AppKey string `yaml:"app_key"`
-}
-
 // Load читает YAML из файла path в значение типа T. Если файла нет,
 // возвращает нулевое значение без ошибки.
 func Load[T any](path string) (T, error) {

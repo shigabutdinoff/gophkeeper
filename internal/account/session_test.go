@@ -29,11 +29,15 @@ type gotrue struct {
 	bearer   string
 	settings config.Settings
 	client   *http.Client
+	srv      *httptest.Server
+	devices  []string
+	refuse   bool
+	fail     bool
 }
 
 func startGotrue(t *testing.T, fail bool) *gotrue {
 	t.Helper()
-	g := &gotrue{}
+	g := &gotrue{fail: fail}
 	wrong, _, err := Keys("anna@example.com", "неверный")
 	require.NoError(t, err, "ключ не выведен")
 	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -44,10 +48,16 @@ func startGotrue(t *testing.T, fail bool) *gotrue {
 		json.NewDecoder(r.Body).Decode(&body)
 		g.bodies = append(g.bodies, body)
 		switch {
-		case fail:
+		case g.fail:
 			w.WriteHeader(http.StatusBadGateway)
 		case r.Header.Get("apikey") != "ключ":
 			w.WriteHeader(http.StatusUnauthorized)
+		case r.URL.Path == "/rest/v1/device_keys" && g.refuse:
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte(`{"code":"42501"}`))
+		case r.URL.Path == "/rest/v1/device_keys":
+			g.devices = append(g.devices, r.Header.Get("Authorization")+" "+body["public_key"])
+			w.WriteHeader(http.StatusCreated)
 		case g.revoked && body["refresh_token"] != "":
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(`{"code":400,"error_code":"refresh_token_not_found"}`))
@@ -63,6 +73,7 @@ func startGotrue(t *testing.T, fail bool) *gotrue {
 		}
 	}))
 	t.Cleanup(srv.Close)
+	g.srv = srv
 	g.client = srv.Client()
 	g.client.Timeout = 2 * time.Second
 	g.settings = config.Settings{Server: srv.URL, AppKey: "ключ"}
@@ -103,7 +114,7 @@ func TestLoginStoresKeyOutsideConfig(t *testing.T) {
 	assert.Equal(t, map[string]string{"email": "anna@example.com", "password": auth}, bodies[0], "на сервер ушёл не ключ входа")
 	r, ok := recall()
 	require.True(t, ok, "записи в хранилище нет")
-	assert.Equal(t, record{Server: g.settings.Server, Email: "anna@example.com", Data: data, Refresh: "обновление-1", AppKey: "ключ"}, r, "в хранилище не тот ключ")
+	assert.Equal(t, record{Server: g.settings.Server, Email: "anna@example.com", Data: data, Refresh: "обновление-1", AppKey: "ключ", Sign: r.Sign}, r, "в хранилище не тот ключ")
 	dir, err := config.Dir()
 	require.NoError(t, err, "каталог настроек не найден")
 	files, err := os.ReadDir(dir)
@@ -127,10 +138,11 @@ func TestLoginWithoutKeyring(t *testing.T) {
 	require.NoError(t, err, "email не сохранён")
 	assert.Equal(t, "anna@example.com", email, "сохранён не тот email")
 	asked := ""
-	data, err := Unlock(t.Context(), g.client, g.settings, func(e string) (string, error) { asked = e; return "пароль-Анны", nil })
+	keys, err := Unlock(t.Context(), g.client, g.settings, func(e string) (string, error) { asked = e; return "пароль-Анны", nil })
 	require.NoError(t, err, "ключ не получен по паролю")
 	_, want, _ := Keys("anna@example.com", "пароль-Анны")
-	assert.Equal(t, want, data, "ключ к данным не тот")
+	assert.Equal(t, want, keys.Data, "ключ к данным не тот")
+	assert.Equal(t, []string{"Bearer доступ " + publicKey(keys.Sign)}, g.registered()[1:], "одноразовый ключ устройства не зарегистрирован")
 	assert.Equal(t, "anna@example.com", asked, "пароль спрошен не для email входа")
 	_, err = Unlock(t.Context(), g.client, g.settings, noAsk)
 	require.Error(t, err, "отказ ввода пароля не вернул ошибку")
@@ -153,6 +165,7 @@ func TestUnlockRotatesRefresh(t *testing.T) {
 	g := startGotrue(t, false)
 	_, err := Unlock(t.Context(), g.client, g.settings, noAsk)
 	require.ErrorIs(t, err, ErrLoggedOut, "без входа ключ выдан")
+	assert.ErrorContains(t, err, "сначала войдите в GophKeeper", "ошибка без входа не просит войти")
 	_, err = Login(t.Context(), g.client, g.settings, "anna@example.com", "пароль-Анны")
 	require.NoError(t, err, "вход не прошёл")
 	for range 2 {
@@ -163,7 +176,7 @@ func TestUnlockRotatesRefresh(t *testing.T) {
 	assert.Equal(t, "обновление-3", r.Refresh, "новый токен обновления не сохранён")
 	snaps.MatchSnapshot(t, g.log(t))
 	bodies, _ := g.state()
-	snaps.MatchJSON(t, bodies[1:])
+	snaps.MatchJSON(t, bodies[2:])
 }
 
 func TestLogout(t *testing.T) {
@@ -203,10 +216,10 @@ func TestUnlockIgnoresOtherAccount(t *testing.T) {
 	require.NoError(t, err, "путь входа не найден")
 	require.NoError(t, os.WriteFile(path, []byte("server: "+g.settings.Server+"\nemail: boris@example.com\n"), 0o600), "файл входа не записан")
 	asked := ""
-	data, err := Unlock(t.Context(), g.client, g.settings, func(e string) (string, error) { asked = e; return "пароль-Бориса", nil })
+	keys, err := Unlock(t.Context(), g.client, g.settings, func(e string) (string, error) { asked = e; return "пароль-Бориса", nil })
 	require.NoError(t, err, "ключ не получен по паролю")
 	_, want, _ := Keys("boris@example.com", "пароль-Бориса")
-	assert.Equal(t, want, data, "выдан ключ чужой записи")
+	assert.Equal(t, want, keys.Data, "выдан ключ чужой записи")
 	assert.Equal(t, "boris@example.com", asked, "пароль спрошен не для email входа")
 }
 

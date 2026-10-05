@@ -1,0 +1,25 @@
+
+[TestAdd - 1]
+Изменение принято, запись <id>.
+
+Пароль записи: 
+Пометка хранится на сервере без шифрования, секретов в ней быть не должно.
+
+---
+
+[TestAddWithoutNote - 1]
+Пароль записи: 
+
+---
+
+[TestAddRefusesBeforeSecrets/not_terminal - 1]
+пароль вводится только с клавиатуры
+---
+
+[TestAddRefusesBeforeSecrets/insecure - 1]
+очередь изменений должна работать по защищённому соединению
+---
+
+[TestAddRefusesBeforeSecrets/no_login - 1]
+укажите логин флагом --login
+---

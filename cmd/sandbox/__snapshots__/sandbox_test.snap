@@ -19,7 +19,7 @@
 # gophkeeper-sandbox: файл записан командой sandbox, повторный запуск его заменяет
 server: https://project.supabase.co
 app_key: ЗАГЛУШКА КЛЮЧА
-queue: tls://127.0.0.1:54222
+queue: tls://127.0.0.1:<port>
 queue_user: client
 queue_password: <client>
 queue_inbox: _INBOX.pub

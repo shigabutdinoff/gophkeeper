@@ -74,13 +74,18 @@ func keyboard(t *testing.T, terminal bool, password string) *os.File {
 
 func settingsFile(t *testing.T, server, appKey string) string {
 	t.Helper()
+	return writeSettings(t, config.Settings{Server: server, AppKey: appKey})
+}
+
+func writeSettings(t *testing.T, s config.Settings) string {
+	t.Helper()
 	home := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", home)
 	t.Setenv(serverEnv, "")
 	dir, err := config.Dir()
 	require.NoError(t, err, "каталог настроек не найден")
 	require.NoError(t, os.MkdirAll(dir, 0o700), "каталог настроек не создан")
-	data, err := yaml.Marshal(config.Settings{Server: server, AppKey: appKey})
+	data, err := yaml.Marshal(s)
 	require.NoError(t, err, "настройки не размечены")
 	require.NoError(t, os.WriteFile(filepath.Join(dir, config.File), data, 0o600), "файл настроек не записан")
 	return home
@@ -97,7 +102,7 @@ func TestRegisterHidesPassword(t *testing.T) {
 	require.NoError(t, err, "регистрация не прошла")
 	snaps.MatchSnapshot(t, out, errOut)
 	snaps.MatchJSON(t, srv.body)
-	assert.Equal(t, []string{"/auth/v1/signup", "/auth/v1/token"}, srv.paths, "после регистрации вход не выполнен")
+	assert.Equal(t, []string{"/auth/v1/signup", "/auth/v1/token", "/rest/v1/device_keys"}, srv.paths, "после регистрации вход не выполнен или ключ устройства не зарегистрирован")
 	assert.Equal(t, "ключ-приложения", srv.apikey, "ключ приложения не из файла настроек")
 	for _, v := range srv.body {
 		assert.NotContains(t, v, typedPassword, "пароль ушёл на сервер")

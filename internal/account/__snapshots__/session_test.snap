@@ -1,10 +1,12 @@
 
 [TestLoginStoresKeyOutsideConfig - 1]
 /auth/v1/token?grant_type=password
+/rest/v1/device_keys?
 ---
 
 [TestUnlockRotatesRefresh - 1]
 /auth/v1/token?grant_type=password
+/rest/v1/device_keys?
 /auth/v1/token?grant_type=refresh_token
 /auth/v1/token?grant_type=refresh_token
 ---
@@ -22,6 +24,7 @@
 
 [TestLogout - 1]
 /auth/v1/token?grant_type=password
+/rest/v1/device_keys?
 /auth/v1/token?grant_type=refresh_token
 /auth/v1/logout?scope=local
 ---

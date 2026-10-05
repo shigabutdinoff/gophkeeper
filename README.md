@@ -8,6 +8,17 @@
 
 Клиент работает в macOS, Linux и Windows на amd64 и arm64.
 
+```console
+$ gophkeeper register
+Email: anna@example.com
+Пароль:
+Учётная запись создана, вход выполнен.
+$ gophkeeper add --login anna --note почта
+Пароль записи:
+Пометка хранится на сервере без шифрования, секретов в ней быть не должно.
+Изменение принято, запись 0199b5e4-7c3a-7d21-9f4e-2a6c8b1d3e57.
+```
+
 ## Установка
 
 Скачайте файл для своей системы со страницы [Releases](https://github.com/shigabutdinoff/gophkeeper/releases).
@@ -52,6 +63,7 @@ gophkeeper completion <оболочка>   # скрипт автодополне
 gophkeeper register                # регистрация по email и паролю
 gophkeeper login                   # вход по email и паролю
 gophkeeper logout                  # выход на этом устройстве
+gophkeeper add --login <логин>     # логин и пароль, флаг --note добавляет пометку
 ```
 
 Адрес сервера клиент берёт из первого заданного источника:
@@ -72,6 +84,19 @@ macOS, Credential Manager Windows, Secret Service Linux). Если хранил�
 нет, пароль будет запрашиваться при каждой команде с данными. `logout`
 завершает только сессию этого устройства.
 
+`add` принимает запись и без связи с сервером, если вход сохранён в
+хранилище секретов, и кладёт её в очередь изменений по адресу `queue` из
+файла настроек. Пароль записи вводится только с клавиатуры. Логин и пароль
+уходят зашифрованными ключом к данным.
+
+> [!WARNING]
+> Пометка из `--note` хранится на сервере открыто, поэтому секретов в ней
+> быть не должно.
+
+> [!NOTE]
+> Вход, выполненный до появления `add`, нужно повторить командой
+> `gophkeeper login`.
+
 ## Разработка
 
 <details>
@@ -82,6 +107,14 @@ Authentication, затем Sign In / Providers, снимите Confirm email и 
 Save changes. Адрес проекта показан на его главной странице под названием,
 открытый ключ `anon` лежит в Project Settings, затем API Keys, на вкладке
 Legacy anon, service_role API keys.
+
+Схему сервера создают миграции из `supabase/migrations`. Примените их
+Supabase CLI, он спросит пароль базы данных проекта:
+
+```sh
+npx supabase@2 link --project-ref <проект>
+npx supabase@2 db push
+```
 
 ### Облачная очередь
 

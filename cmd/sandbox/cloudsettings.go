@@ -31,9 +31,9 @@ func saveCreds(state string, creds []byte) (string, error) {
 	return path, writeFile(path, creds)
 }
 
-func cloudSettings(c cloudConfig, queue, creds string) settings {
-	return settings{
-		Settings: config.Settings{Server: c.Supabase.URL, AppKey: c.Supabase.Key},
-		Queue:    queue, QueueCreds: creds, QueueInbox: queueInbox,
+func cloudSettings(c cloudConfig, queue, creds string) config.Settings {
+	return config.Settings{
+		Server: c.Supabase.URL, AppKey: c.Supabase.Key,
+		Queue: queue, QueueCreds: creds, QueueInbox: queueInbox,
 	}
 }

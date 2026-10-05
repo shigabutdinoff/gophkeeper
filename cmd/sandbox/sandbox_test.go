@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"runtime"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -74,7 +75,8 @@ func TestSandboxSettings(t *testing.T) {
 		data, serr := sandboxSettings(state)
 		require.NoError(t, serr, "настройки песочницы не собраны")
 		ca := regexp.MustCompile(`(?s)-----BEGIN CERTIFICATE-----.*-----END CERTIFICATE-----`)
-		snaps.MatchSnapshot(t, ca.ReplaceAllString(strings.ReplaceAll(string(data), string(client), "<client>"), "<ca>"))
+		masked := ca.ReplaceAllString(strings.ReplaceAll(string(data), string(client), "<client>"), "<ca>")
+		snaps.MatchSnapshot(t, strings.ReplaceAll(masked, ":"+strconv.Itoa(sandboxPort)+"\n", ":<port>\n"))
 	})
 }
 

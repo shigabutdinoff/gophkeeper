@@ -94,3 +94,11 @@
 [TestErrors/gophkeeper_logout_--nosuch - 1]
 неизвестный флаг "--nosuch"
 ---
+
+[TestErrors/gophkeeper_add_nosuch - 1]
+лишний аргумент "nosuch"
+---
+
+[TestErrors/gophkeeper_add_--nosuch - 1]
+неизвестный флаг "--nosuch"
+---

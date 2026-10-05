@@ -3,6 +3,7 @@ module github.com/shigabutdinoff/gophkeeper
 go 1.27.1
 
 require (
+	github.com/avast/retry-go/v5 v5.0.0
 	github.com/caarlos0/env/v11 v11.4.1
 	github.com/gkampitakis/ciinfo v0.3.4
 	github.com/gkampitakis/go-snaps v0.5.23

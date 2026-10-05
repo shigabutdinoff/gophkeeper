@@ -1,0 +1,16 @@
+env XDG_CONFIG_HOME=$WORK
+env GOPHKEEPER_SERVER=
+mkdir $WORK/gophkeeper
+cp config.yaml $WORK/gophkeeper/config.yaml
+
+! exec gophkeeper add --login anna
+! stdout .
+cmp stderr loggedout.txt
+
+-- config.yaml --
+server: https://example.invalid
+app_key: ключ-приложения
+queue: tls://127.0.0.1:1
+queue_inbox: _INBOX.pub
+-- loggedout.txt --
+Ошибка: сначала войдите в GophKeeper: gophkeeper login

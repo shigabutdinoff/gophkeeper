@@ -10,7 +10,7 @@ Email: Пароль:
 Выход выполнен.
 
 
-[]string{"/auth/v1/token", "/auth/v1/token", "/auth/v1/logout"}
+[]string{"/auth/v1/token", "/rest/v1/device_keys", "/auth/v1/token", "/auth/v1/logout"}
 ---
 
 [TestLoginWithoutKeyring - 1]

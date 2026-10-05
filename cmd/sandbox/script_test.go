@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"testing"
 
@@ -31,7 +32,7 @@ func TestScripts(t *testing.T) {
 			home := filepath.Join(env.WorkDir, "home")
 			config := filepath.Join(home, ".config")
 			env.Vars = append(env.Vars, "HOME="+home, "USERPROFILE="+home, "XDG_CONFIG_HOME="+config, "CONFIG="+config,
-				"GORACE=atexit_sleep_ms=0", "SUPABASE_URL=https://project.supabase.co", "SUPABASE_ANON_KEY=ЗАГЛУШКА КЛЮЧА")
+				"GORACE=atexit_sleep_ms=0", testPortEnv+"="+strconv.Itoa(sandboxPort), "SUPABASE_URL=https://project.supabase.co", "SUPABASE_ANON_KEY=ЗАГЛУШКА КЛЮЧА")
 			env.Defer(func() {
 				stop(context.Background(), filepath.Join(config, "gophkeeper", sandboxName))
 			})
@@ -45,7 +46,7 @@ func publish(ts *testscript.TestScript, neg bool, args []string) {
 	if neg || len(args) != 1 {
 		ts.Fatalf("использование: publish <тема>")
 	}
-	var c settings
+	var c config.Settings
 	ts.Check(yaml.Unmarshal([]byte(ts.ReadFile(filepath.Join(ts.Getenv("CONFIG"), "gophkeeper", config.File))), &c))
 	roots := x509.NewCertPool()
 	if !roots.AppendCertsFromPEM([]byte(c.QueueCA)) {
