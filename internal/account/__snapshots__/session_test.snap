@@ -1,0 +1,27 @@
+
+[TestLoginStoresKeyOutsideConfig - 1]
+/auth/v1/token?grant_type=password
+---
+
+[TestUnlockRotatesRefresh - 1]
+/auth/v1/token?grant_type=password
+/auth/v1/token?grant_type=refresh_token
+/auth/v1/token?grant_type=refresh_token
+---
+
+[TestUnlockRotatesRefresh - 2]
+[
+ {
+  "refresh_token": "обновление-1"
+ },
+ {
+  "refresh_token": "обновление-2"
+ }
+]
+---
+
+[TestLogout - 1]
+/auth/v1/token?grant_type=password
+/auth/v1/token?grant_type=refresh_token
+/auth/v1/logout?scope=local
+---

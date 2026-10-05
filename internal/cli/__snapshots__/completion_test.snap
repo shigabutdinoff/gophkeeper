@@ -20,6 +20,8 @@ Completion ended with directive: ShellCompDirectiveNoFileComp
 [TestCompleteRequest/gophkeeper - 1]
 completion Вывести скрипт автодополнения для оболочки
 help       Показать справку по команде
+login      Войти по email и паролю
+logout     Выйти на этом устройстве
 register   Зарегистрироваться по email и паролю
 :4
 
@@ -69,6 +71,8 @@ Completion ended with directive: ShellCompDirectiveNoFileComp
 [TestCompleteRequest/gophkeeper_help - 1]
 completion Вывести скрипт автодополнения для оболочки
 help       Показать справку по команде
+login      Войти по email и паролю
+logout     Выйти на этом устройстве
 register   Зарегистрироваться по email и паролю
 :4
 
@@ -77,6 +81,20 @@ Completion ended with directive: ShellCompDirectiveNoFileComp
 ---
 
 [TestCompleteRequest/gophkeeper_register - 1]
+:4
+
+Completion ended with directive: ShellCompDirectiveNoFileComp
+
+---
+
+[TestCompleteRequest/gophkeeper_login - 1]
+:4
+
+Completion ended with directive: ShellCompDirectiveNoFileComp
+
+---
+
+[TestCompleteRequest/gophkeeper_logout - 1]
 :4
 
 Completion ended with directive: ShellCompDirectiveNoFileComp

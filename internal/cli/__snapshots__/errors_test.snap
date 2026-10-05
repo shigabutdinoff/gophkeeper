@@ -78,3 +78,19 @@
 [TestErrors/gophkeeper_register_--nosuch - 1]
 неизвестный флаг "--nosuch"
 ---
+
+[TestErrors/gophkeeper_login_nosuch - 1]
+лишний аргумент "nosuch"
+---
+
+[TestErrors/gophkeeper_login_--nosuch - 1]
+неизвестный флаг "--nosuch"
+---
+
+[TestErrors/gophkeeper_logout_nosuch - 1]
+лишний аргумент "nosuch"
+---
+
+[TestErrors/gophkeeper_logout_--nosuch - 1]
+неизвестный флаг "--nosuch"
+---

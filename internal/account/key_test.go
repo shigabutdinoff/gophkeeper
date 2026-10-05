@@ -18,7 +18,7 @@ func TestAuthKey(t *testing.T) {
 
 func authKey(t *testing.T, email, password string) string {
 	t.Helper()
-	key, err := AuthKey(email, password)
+	key, _, err := Keys(email, password)
 	require.NoError(t, err, "ключ входа не выведен")
 	return key
 }

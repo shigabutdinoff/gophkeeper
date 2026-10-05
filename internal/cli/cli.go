@@ -33,7 +33,7 @@ func New(version, number, date, commit string, out, errOut io.Writer) *cobra.Com
 	root.InitDefaultVersionFlag()
 	root.Flags().Lookup("version").Usage = "показать версию, номер, дату и коммит сборки"
 	root.InitDefaultCompletionCmd("completion")
-	root.AddCommand(registerCmd())
+	root.AddCommand(registerCmd(), loginCmd(), logoutCmd())
 	Localize(root)
 	return root
 }
