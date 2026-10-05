@@ -1,0 +1,6 @@
+env XDG_CONFIG_HOME=$WORK
+env GOPHKEEPER_SERVER=
+
+exec gophkeeper logout
+stdout '^Выход выполнен.$'
+! stderr .

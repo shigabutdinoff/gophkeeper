@@ -20,19 +20,19 @@ type Settings struct {
 	AppKey string `yaml:"app_key"`
 }
 
-// Load читает настройки из файла path. Если файла нет, возвращает пустые
-// настройки без ошибки.
-func Load(path string) (Settings, error) {
-	var s Settings
+// Load читает YAML из файла path в значение типа T. Если файла нет,
+// возвращает нулевое значение без ошибки.
+func Load[T any](path string) (T, error) {
+	var s T
 	data, err := os.ReadFile(path)
 	if errors.Is(err, fs.ErrNotExist) {
 		return s, nil
 	}
 	if err != nil {
-		return Settings{}, fmt.Errorf("чтение файла настроек: %w", err)
+		return s, fmt.Errorf("чтение файла настроек: %w", err)
 	}
 	if err = yaml.Unmarshal(data, &s); err != nil {
-		return Settings{}, fmt.Errorf("разбор файла настроек %q: %w", path, err)
+		return *new(T), fmt.Errorf("разбор файла настроек %q: %w", path, err)
 	}
 	return s, nil
 }

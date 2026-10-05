@@ -22,7 +22,7 @@ func restoreOnInterrupt(fd int) (stop func()) {
 		return func() {}
 	}
 	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(sig, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
 	done := make(chan struct{})
 	go func() {
 		select {

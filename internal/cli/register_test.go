@@ -31,6 +31,7 @@ type signupServer struct {
 	requests atomic.Int32
 	body     map[string]string
 	apikey   string
+	paths    []string
 }
 
 func startServer(t *testing.T, reply http.HandlerFunc) *signupServer {
@@ -38,9 +39,11 @@ func startServer(t *testing.T, reply http.HandlerFunc) *signupServer {
 	s := &signupServer{}
 	s.Server = httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		s.requests.Add(1)
-		assert.Equal(t, "/auth/v1/signup", r.URL.Path, "запрос пришёл не на адрес регистрации")
-		s.apikey = r.Header.Get("apikey")
-		assert.NoError(t, json.NewDecoder(r.Body).Decode(&s.body), "тело запроса не разобрано")
+		s.paths = append(s.paths, r.URL.Path)
+		if r.URL.Path == "/auth/v1/signup" {
+			s.apikey = r.Header.Get("apikey")
+			assert.NoError(t, json.NewDecoder(r.Body).Decode(&s.body), "тело запроса не разобрано")
+		}
 		reply(w, r)
 	}))
 	t.Cleanup(s.Close)
@@ -84,7 +87,7 @@ func settingsFile(t *testing.T, server, appKey string) string {
 }
 
 func ok(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"access_token":"доступ","refresh_token":"обновление"}`))
 }
 
 func TestRegisterHidesPassword(t *testing.T) {
@@ -94,6 +97,7 @@ func TestRegisterHidesPassword(t *testing.T) {
 	require.NoError(t, err, "регистрация не прошла")
 	snaps.MatchSnapshot(t, out, errOut)
 	snaps.MatchJSON(t, srv.body)
+	assert.Equal(t, []string{"/auth/v1/signup", "/auth/v1/token"}, srv.paths, "после регистрации вход не выполнен")
 	assert.Equal(t, "ключ-приложения", srv.apikey, "ключ приложения не из файла настроек")
 	for _, v := range srv.body {
 		assert.NotContains(t, v, typedPassword, "пароль ушёл на сервер")
@@ -103,7 +107,7 @@ func TestRegisterHidesPassword(t *testing.T) {
 func TestRegisterHidesServerDetails(t *testing.T) {
 	srv := startServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		_, _ = w.Write([]byte(`{"error_code":"secret-detail","msg":"secret-detail"}`))
+		w.Write([]byte(`{"error_code":"secret-detail","msg":"secret-detail"}`))
 	})
 	settingsFile(t, srv.URL, "ключ-приложения")
 	out, errOut, err := executeIn(keyboard(t, true, typedPassword), "register")
