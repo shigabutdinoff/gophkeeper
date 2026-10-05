@@ -13,7 +13,7 @@ func init() {
 
 // New возвращает корневую команду gophkeeper. Её флаг version печатает
 // версию, номер, дату и коммит сборки, пустое значение как N/A. Результаты
-// идут в out, сообщения cobra в errOut, а ошибка возвращается из Execute.
+// идут в out, сообщения cobra и приглашения в errOut.
 func New(version, number, date, commit string, out, errOut io.Writer) *cobra.Command {
 	root := &cobra.Command{
 		Use:     "gophkeeper",
@@ -33,6 +33,7 @@ func New(version, number, date, commit string, out, errOut io.Writer) *cobra.Com
 	root.InitDefaultVersionFlag()
 	root.Flags().Lookup("version").Usage = "показать версию, номер, дату и коммит сборки"
 	root.InitDefaultCompletionCmd("completion")
+	root.AddCommand(registerCmd())
 	Localize(root)
 	return root
 }

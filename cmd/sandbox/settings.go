@@ -5,13 +5,15 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/shigabutdinoff/gophkeeper/internal/config"
 )
 
 const markerPrefix = "# gophkeeper-"
 
 type settings struct {
-	Server     string `yaml:"server"`
-	AppKey     string `yaml:"app_key"`
+	config.Settings `yaml:",inline"`
+
 	Queue      string `yaml:"queue"`
 	QueueUser  string `yaml:"queue_user,omitempty"`
 	QueuePass  string `yaml:"queue_password,omitempty"`

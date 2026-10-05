@@ -70,3 +70,11 @@
 [TestErrors/gophkeeper_help_--nosuch - 1]
 неизвестный флаг "--nosuch"
 ---
+
+[TestErrors/gophkeeper_register_nosuch - 1]
+лишний аргумент "nosuch"
+---
+
+[TestErrors/gophkeeper_register_--nosuch - 1]
+неизвестный флаг "--nosuch"
+---

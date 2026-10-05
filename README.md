@@ -16,6 +16,7 @@ gophkeeper                         # список команд
 gophkeeper <команда> --help        # справка по команде
 gophkeeper --version               # версия, номер, дата и коммит сборки
 gophkeeper completion <оболочка>   # скрипт автодополнения
+gophkeeper register                # регистрация по email и паролю
 ```
 
 ## Установка
@@ -25,8 +26,8 @@ gophkeeper completion <оболочка>   # скрипт автодополне
 ### macOS
 
 ```sh
-xattr -d com.apple.quarantine gophkeeper-27.0-*-darwin-*
-mv gophkeeper-27.0-*-darwin-* gophkeeper
+xattr -d com.apple.quarantine gophkeeper-*-darwin-*
+mv gophkeeper-*-darwin-* gophkeeper
 chmod +x gophkeeper
 sudo mv gophkeeper /usr/local/bin/
 ```
@@ -34,7 +35,7 @@ sudo mv gophkeeper /usr/local/bin/
 ### Linux
 
 ```sh
-mv gophkeeper-27.0-*-linux-* gophkeeper
+mv gophkeeper-*-linux-* gophkeeper
 chmod +x gophkeeper
 sudo mv gophkeeper /usr/local/bin/
 ```

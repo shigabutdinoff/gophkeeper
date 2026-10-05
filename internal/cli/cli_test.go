@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"io"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,8 +10,13 @@ import (
 )
 
 func execute(args ...string) (out, errOut string, err error) {
+	return executeIn(nil, args...)
+}
+
+func executeIn(in io.Reader, args ...string) (out, errOut string, err error) {
 	var stdout, stderr bytes.Buffer
 	root := New("27.0", "27A41", "2026-09-28", "3f2a9c1", &stdout, &stderr)
+	root.SetIn(in)
 	if args == nil {
 		args = []string{}
 	}

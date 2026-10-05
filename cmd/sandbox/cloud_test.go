@@ -126,16 +126,6 @@ func TestCloudCommand(t *testing.T) {
 	assert.Equal(t, filepath.Join(filepath.Dir(p.client), "cloud"), p.state, "каталог облака не рядом с файлом настроек")
 }
 
-func TestPathsRelativeConfigHome(t *testing.T) {
-	home := t.TempDir()
-	t.Setenv("HOME", home)
-	t.Setenv("USERPROFILE", home)
-	t.Setenv("XDG_CONFIG_HOME", "~/.config")
-	p, err := paths("cloud")
-	require.NoError(t, err, "пути настроек не получены")
-	assert.Equal(t, filepath.Join(home, ".config", "gophkeeper", "config.yaml"), p.client, "относительный XDG_CONFIG_HOME не пропущен")
-}
-
 func TestCheckClientPartlyDenied(t *testing.T) {
 	url := startCloudQueue(t, &server.Permissions{
 		Publish:   &server.SubjectPermission{Allow: []string{">"}},

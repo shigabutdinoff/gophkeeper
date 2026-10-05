@@ -14,6 +14,7 @@ import (
 	"github.com/rogpeppe/go-internal/testscript"
 	"go.yaml.in/yaml/v3"
 
+	"github.com/shigabutdinoff/gophkeeper/internal/config"
 	"github.com/shigabutdinoff/gophkeeper/internal/snapstest"
 )
 
@@ -45,7 +46,7 @@ func publish(ts *testscript.TestScript, neg bool, args []string) {
 		ts.Fatalf("использование: publish <тема>")
 	}
 	var c settings
-	ts.Check(yaml.Unmarshal([]byte(ts.ReadFile(filepath.Join(ts.Getenv("CONFIG"), "gophkeeper", settingsFile))), &c))
+	ts.Check(yaml.Unmarshal([]byte(ts.ReadFile(filepath.Join(ts.Getenv("CONFIG"), "gophkeeper", config.File))), &c))
 	roots := x509.NewCertPool()
 	if !roots.AppendCertsFromPEM([]byte(c.QueueCA)) {
 		ts.Fatalf("CA очереди не разобран")
