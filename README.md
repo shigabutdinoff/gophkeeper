@@ -16,8 +16,8 @@ GophKeeper хранит логины и пароли, тексты, файлы �
 ### macOS
 
 ```sh
-xattr -d com.apple.quarantine gophkeeper-27.0-*-darwin-*
-mv gophkeeper-27.0-*-darwin-* gophkeeper
+xattr -d com.apple.quarantine gophkeeper-*-darwin-*
+mv gophkeeper-*-darwin-* gophkeeper
 chmod +x gophkeeper
 sudo mv gophkeeper /usr/local/bin/
 ```
@@ -25,7 +25,7 @@ sudo mv gophkeeper /usr/local/bin/
 ### Linux
 
 ```sh
-mv gophkeeper-27.0-*-linux-* gophkeeper
+mv gophkeeper-*-linux-* gophkeeper
 chmod +x gophkeeper
 sudo mv gophkeeper /usr/local/bin/
 ```
@@ -50,7 +50,20 @@ gophkeeper                         # список команд
 gophkeeper <команда> --help        # справка по команде
 gophkeeper --version               # версия, номер, дата и коммит сборки
 gophkeeper completion <оболочка>   # скрипт автодополнения
+gophkeeper register                # регистрация по email и паролю
 ```
+
+Адрес сервера клиент берёт из первого заданного источника:
+
+1. переменная `GOPHKEEPER_SERVER`;
+2. флаг `--server`;
+3. `server` в файле `~/.config/gophkeeper/config.yaml`, который пишет
+   песочница.
+
+Ключ приложения клиент берёт только из `app_key` в этом файле, поэтому
+адрес из переменной или флага должен совпадать с `server` в нём. Пароль
+вводится только с клавиатуры. Сервер получает не пароль, а выведенный из
+него ключ входа, поэтому не знает ни пароля, ни ключа к данным.
 
 ## Разработка
 

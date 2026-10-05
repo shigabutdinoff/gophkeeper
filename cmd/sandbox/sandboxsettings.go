@@ -8,6 +8,8 @@ import (
 	"strconv"
 
 	"go.yaml.in/yaml/v3"
+
+	"github.com/shigabutdinoff/gophkeeper/internal/config"
 )
 
 const (
@@ -32,7 +34,8 @@ func sandboxSettings(state string) ([]byte, error) {
 		return nil, err
 	}
 	data, err := yaml.Marshal(settings{
-		Server: s.URL, AppKey: s.Key, Queue: sandboxQueue, QueueUser: clientUser, QueuePass: string(client),
+		Settings: config.Settings{Server: s.URL, AppKey: s.Key},
+		Queue:    sandboxQueue, QueueUser: clientUser, QueuePass: string(client),
 		QueueInbox: queueInbox, QueueCA: string(ca),
 	})
 	if err != nil {

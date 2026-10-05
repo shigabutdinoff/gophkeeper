@@ -8,7 +8,8 @@ import (
 )
 
 func TestRun(t *testing.T) {
-	for _, path := range slices.Concat(paths(), [][]string{{"--version"}, {"-v"}}) {
+	runnable := slices.DeleteFunc(paths(), func(path []string) bool { return slices.Equal(path, []string{"register"}) })
+	for _, path := range slices.Concat(runnable, [][]string{{"--version"}, {"-v"}}) {
 		t.Run(name(path), func(t *testing.T) {
 			snaps.MatchSnapshot(t, mustExecute(t, path...))
 		})

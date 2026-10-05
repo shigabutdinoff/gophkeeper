@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 
 	"go.yaml.in/yaml/v3"
+
+	"github.com/shigabutdinoff/gophkeeper/internal/config"
 )
 
 const credsFile = "client.creds"
@@ -31,7 +33,7 @@ func saveCreds(state string, creds []byte) (string, error) {
 
 func cloudSettings(c cloudConfig, queue, creds string) settings {
 	return settings{
-		Server: c.Supabase.URL, AppKey: c.Supabase.Key,
-		Queue: queue, QueueCreds: creds, QueueInbox: queueInbox,
+		Settings: config.Settings{Server: c.Supabase.URL, AppKey: c.Supabase.Key},
+		Queue:    queue, QueueCreds: creds, QueueInbox: queueInbox,
 	}
 }

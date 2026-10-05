@@ -1,0 +1,38 @@
+
+[TestRegisterHidesPassword - 1]
+Учётная запись создана.
+
+Email: Пароль: 
+
+---
+
+[TestRegisterRefusesBeforeSending/http - 1]
+сервер должен работать по защищённому соединению (https)
+---
+
+[TestRegisterRefusesBeforeSending/no_server - 1]
+не задан адрес сервера: укажите переменную GOPHKEEPER_SERVER, флаг --server или server в файле $XDG_CONFIG_HOME/gophkeeper/config.yaml
+---
+
+[TestRegisterRefusesBeforeSending/short - 1]
+пароль должен быть не короче 8 символов
+---
+
+[TestRegisterRefusesBeforeSending/not_terminal - 1]
+пароль вводится только с клавиатуры
+---
+
+[TestRegisterRefusesBeforeSending/no_key - 1]
+не задан ключ приложения для сервера $SERVER: укажите server и app_key в файле $XDG_CONFIG_HOME/gophkeeper/config.yaml
+---
+
+[TestRegisterRefusesBeforeSending/foreign_server - 1]
+не задан ключ приложения для сервера https://other.invalid: укажите server и app_key в файле $XDG_CONFIG_HOME/gophkeeper/config.yaml
+---
+
+[TestRegisterHidesPassword - 2]
+{
+ "email": "anna@example.com",
+ "password": "e3n5zJhzPOg6NcuSpCWp3CzT2IpWWPwteNw-ZVgCxNw"
+}
+---

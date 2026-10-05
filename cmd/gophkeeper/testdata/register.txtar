@@ -1,0 +1,33 @@
+env XDG_CONFIG_HOME=$WORK
+env GOPHKEEPER_SERVER=
+
+! exec gophkeeper register
+! stdout .
+cmpenv stderr noserver.txt
+
+! exec gophkeeper register --server http://example.com
+! stdout .
+cmp stderr http.txt
+
+env GOPHKEEPER_SERVER=https://example.invalid
+! exec gophkeeper register
+! stdout .
+cmpenv stderr nokey.txt
+
+mkdir $WORK/gophkeeper
+cp config.yaml $WORK/gophkeeper/config.yaml
+! exec gophkeeper register
+! stdout .
+cmp stderr terminal.txt
+
+-- config.yaml --
+server: https://example.invalid
+app_key: ключ-приложения
+-- noserver.txt --
+Ошибка: не задан адрес сервера: укажите переменную GOPHKEEPER_SERVER, флаг --server или server в файле $WORK/gophkeeper/config.yaml
+-- http.txt --
+Ошибка: сервер должен работать по защищённому соединению (https)
+-- nokey.txt --
+Ошибка: не задан ключ приложения для сервера https://example.invalid: укажите server и app_key в файле $WORK/gophkeeper/config.yaml
+-- terminal.txt --
+Ошибка: пароль вводится только с клавиатуры
