@@ -1,0 +1,42 @@
+exec gophkeeperd
+cmp stdout usage.txt
+
+exec gophkeeperd worker --help
+cmp stdout worker.txt
+
+-- usage.txt --
+Сервер GophKeeper
+
+Использование:
+  gophkeeperd [флаги]
+  gophkeeperd [команда]
+
+Команды:
+  help        Показать справку по команде
+  worker      Применять изменения из очереди к серверу
+
+Флаги:
+  -h, --help   показать справку по команде
+
+Подробнее о команде: "gophkeeperd [команда] --help".
+-- worker.txt --
+Применяет изменения из очереди к серверу по одному в порядке прихода и отбрасывает неразборчивые.
+Пускает в очередь только вошедшие устройства: проверяет токен доступа по ключам сервера.
+
+Использование:
+  gophkeeperd worker [флаги]
+
+Флаги:
+      --access-seed ключ          ключ выдачи доступа к очереди, если не задана GOPHKEEPER_ACCESS_SEED, важнее файла настроек
+  -c, --config файл               файл настроек YAML или JSON, если не задана CONFIG
+      --queue адрес              адрес очереди изменений, если не задана GOPHKEEPER_QUEUE, важнее файла настроек
+      --queue-account ключ        ключ учётной записи очереди, если не задана GOPHKEEPER_QUEUE_ACCOUNT, важнее файла настроек
+      --queue-ca PEM                  PEM сертификата очереди, если не задана GOPHKEEPER_QUEUE_CA, важнее файла настроек
+      --queue-creds-file файл     файл доступа к очереди, если не задана GOPHKEEPER_QUEUE_CREDS_FILE, важнее файла настроек
+      --queue-password пароль   пароль пользователя очереди, если не задана GOPHKEEPER_QUEUE_PASSWORD, важнее файла настроек
+      --queue-user имя             имя пользователя очереди, если не задана GOPHKEEPER_QUEUE_USER, важнее файла настроек
+      --server адрес             адрес сервера, если не задана GOPHKEEPER_SERVER, важнее файла настроек
+      --server-key ключ           ключ доступа к серверу, если не задана GOPHKEEPER_SERVER_KEY, важнее файла настроек
+
+Общие флаги:
+  -h, --help   показать справку по команде

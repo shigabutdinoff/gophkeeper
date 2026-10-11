@@ -5,6 +5,7 @@ go 1.27.1
 require (
 	charm.land/bubbletea/v2 v2.1.0
 	charm.land/huh/v2 v2.0.3
+	charm.land/lipgloss/v2 v2.0.1
 	github.com/MicahParks/keyfunc/v3 v3.8.2
 	github.com/avast/retry-go/v5 v5.0.0
 	github.com/caarlos0/env/v11 v11.4.1
@@ -23,6 +24,7 @@ require (
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.12.1
 	github.com/synadia-io/callout.go v0.2.3
+	github.com/urfave/sflags v0.4.1
 	github.com/zalando/go-keyring v0.2.8
 	go.yaml.in/yaml/v3 v3.0.5
 	golang.org/x/crypto v0.57.0
@@ -32,7 +34,6 @@ require (
 
 require (
 	charm.land/bubbles/v2 v2.0.0 // indirect
-	charm.land/lipgloss/v2 v2.0.1 // indirect
 	github.com/MicahParks/jwkset v0.11.3 // indirect
 	github.com/antithesishq/antithesis-sdk-go v0.8.0-default-no-op // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect

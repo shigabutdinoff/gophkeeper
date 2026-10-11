@@ -1,0 +1,32 @@
+! exec gophkeeperd worker
+! stdout .
+cmp stderr missing.txt
+
+env GOPHKEEPER_SERVER_KEY=ключ
+! exec gophkeeperd worker
+cmp stderr key.txt
+
+env GOPHKEEPER_ACCESS_SEED=зерно
+env GOPHKEEPER_SERVER=https://example.com
+! exec gophkeeperd worker --queue nats://127.0.0.1:4222
+cmp stderr insecure.txt
+
+env GOPHKEEPER_SERVER=http://example.com
+! exec gophkeeperd worker --queue tls://127.0.0.1:4222
+cmp stderr http.txt
+
+env GOPHKEEPER_SERVER=https://example.com
+! exec gophkeeperd worker --queue tls://127.0.0.1:1 --access-seed s3cret
+! stderr s3cret
+cmp stderr seed.txt
+
+-- missing.txt --
+Ошибка: не заданы адрес очереди изменений (GOPHKEEPER_QUEUE, --queue или queue в файле настроек), адрес сервера (GOPHKEEPER_SERVER, --server или server в файле настроек), ключ доступа к серверу (GOPHKEEPER_SERVER_KEY, --server-key или server_key в файле настроек), ключ выдачи доступа к очереди (GOPHKEEPER_ACCESS_SEED, --access-seed или access_seed в файле настроек)
+-- key.txt --
+Ошибка: не заданы адрес очереди изменений (GOPHKEEPER_QUEUE, --queue или queue в файле настроек), адрес сервера (GOPHKEEPER_SERVER, --server или server в файле настроек), ключ выдачи доступа к очереди (GOPHKEEPER_ACCESS_SEED, --access-seed или access_seed в файле настроек)
+-- seed.txt --
+Ошибка: ключ выдачи доступа к очереди: illegal base32 data at input byte 0
+-- insecure.txt --
+Ошибка: очередь изменений должна работать по защищённому соединению
+-- http.txt --
+Ошибка: сервер должен работать по защищённому соединению (https)

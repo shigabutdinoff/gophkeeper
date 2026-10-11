@@ -1,0 +1,4 @@
+
+[TestLoad - 1]
+[]string{"file: tls://file|https://file файл зерно", "flag: tls://flag|https://file файл зерно", "env: tls://env|https://file файл зерно", "json: tls://json|https://json json зерно-json", "CONFIG: tls://json|https://json json зерно-json", "no file: ошибка: не заданы ключ доступа к серверу (GOPHKEEPER_SERVER_KEY, --server-key или server_key в файле настроек), ключ выдачи доступа к очереди (GOPHKEEPER_ACCESS_SEED, --access-seed или access_seed в файле настроек)", "broken: ошибка: чтение файла настроек: read <dir>: is a directory"}
+---

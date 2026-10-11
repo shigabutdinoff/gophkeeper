@@ -33,5 +33,6 @@ go.work.sum
 
 # Built binary
 /gophkeeper
+/gophkeeperd
 /dist/
 /.buildnumber

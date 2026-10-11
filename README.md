@@ -20,6 +20,9 @@ gophkeeper logout                  # выход на этом устройств
 gophkeeper add --login <логин>     # логин и пароль, флаг --note добавляет пометку
 gophkeeper add --type text         # текст из stdin до конца ввода
 gophkeeper add --type card         # номер, срок, имя и код банковской карты
+gophkeeper list                    # тип, пометка и идентификатор каждой записи
+gophkeeper list <идентификатор>    # поля и пометка записи
+gophkeeper edit <идентификатор>    # новый пароль, флаги --login и --note меняют остальное
 gophkeeper delete <идентификатор>  # удаление записи
 ```
 

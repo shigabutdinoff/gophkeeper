@@ -103,10 +103,26 @@
 неизвестный флаг "--nosuch"
 ---
 
+[TestErrors/gophkeeper_list_nosuch - 1]
+сначала войдите в GophKeeper: gophkeeper login
+---
+
+[TestErrors/gophkeeper_list_--nosuch - 1]
+неизвестный флаг "--nosuch"
+---
+
 [TestErrors/gophkeeper_delete_nosuch - 1]
 запись не найдена
 ---
 
 [TestErrors/gophkeeper_delete_--nosuch - 1]
+неизвестный флаг "--nosuch"
+---
+
+[TestErrors/gophkeeper_edit_nosuch - 1]
+запись не найдена
+---
+
+[TestErrors/gophkeeper_edit_--nosuch - 1]
 неизвестный флаг "--nosuch"
 ---

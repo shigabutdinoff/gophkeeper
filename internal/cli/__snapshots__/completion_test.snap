@@ -21,7 +21,9 @@ Completion ended with directive: ShellCompDirectiveNoFileComp
 add        Добавить запись
 completion Вывести скрипт автодополнения для оболочки
 delete     Удалить запись
+edit       Изменить запись
 help       Показать справку по команде
+list       Показать записи или одну запись
 login      Войти по email и паролю
 logout     Выйти на этом устройстве
 register   Зарегистрироваться по email и паролю
@@ -74,7 +76,9 @@ Completion ended with directive: ShellCompDirectiveNoFileComp
 add        Добавить запись
 completion Вывести скрипт автодополнения для оболочки
 delete     Удалить запись
+edit       Изменить запись
 help       Показать справку по команде
+list       Показать записи или одну запись
 login      Войти по email и паролю
 logout     Выйти на этом устройстве
 register   Зарегистрироваться по email и паролю
@@ -112,7 +116,21 @@ Completion ended with directive: ShellCompDirectiveNoFileComp
 
 ---
 
+[TestCompleteRequest/gophkeeper_list - 1]
+:4
+
+Completion ended with directive: ShellCompDirectiveNoFileComp
+
+---
+
 [TestCompleteRequest/gophkeeper_delete - 1]
+:4
+
+Completion ended with directive: ShellCompDirectiveNoFileComp
+
+---
+
+[TestCompleteRequest/gophkeeper_edit - 1]
 :4
 
 Completion ended with directive: ShellCompDirectiveNoFileComp

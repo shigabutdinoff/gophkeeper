@@ -1,0 +1,20 @@
+env XDG_CONFIG_HOME=$WORK
+env GOPHKEEPER_SERVER=
+mkdir $WORK/gophkeeper
+cp config.yaml $WORK/gophkeeper/config.yaml
+
+! exec gophkeeper list
+! stdout .
+cmp stderr loggedout.txt
+
+! exec gophkeeper list a b
+! stdout .
+cmp stderr extra.txt
+
+-- config.yaml --
+server: https://example.invalid
+app_key: ключ-приложения
+-- loggedout.txt --
+Ошибка: сначала войдите в GophKeeper: gophkeeper login
+-- extra.txt --
+Ошибка: лишний аргумент "b"
