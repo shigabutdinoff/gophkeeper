@@ -1,0 +1,121 @@
+package worker
+
+import (
+	"bytes"
+	"encoding/json"
+	"log"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"sync"
+	"testing"
+)
+
+type call struct {
+	Method string `json:"-"`
+	Table  string `json:"-"`
+	Owner  string `json:"user_id"`
+	Record string `json:"id"`
+	Note   string `json:"note"`
+	Secret string `json:"secret"`
+	APIKey string `json:"-"`
+	Auth   string `json:"-"`
+}
+
+type fake struct {
+	*httptest.Server
+	mu    sync.Mutex
+	rows  map[[2]string]string
+	calls []call
+	reply func(n int, w http.ResponseWriter) bool
+	log   syncBuffer
+}
+
+func newFake(t *testing.T) *fake {
+	f := &fake{rows: map[[2]string]string{}}
+	f.Server = httptest.NewTLSServer(f)
+	t.Cleanup(f.Close)
+	return f
+}
+
+func (f *fake) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	c := call{Method: r.Method, Table: strings.TrimPrefix(r.URL.Path, "/rest/v1/"),
+		APIKey: r.Header.Get("apikey"), Auth: r.Header.Get("Authorization")}
+	body := r.Method == http.MethodPost || r.Method == http.MethodPatch
+	switch {
+	case q.Get("select") != "user_id" || !strings.Contains(r.Header.Get("Prefer"), "return=representation"),
+		body && json.NewDecoder(r.Body).Decode(&c) != nil,
+		r.Method == http.MethodPost && q.Get("on_conflict") != "user_id,id":
+		http.Error(w, "неверный запрос", http.StatusBadRequest)
+		return
+	case r.Method != http.MethodPost && c.Table == "records":
+		c.Owner, c.Record = strings.TrimPrefix(q.Get("user_id"), "eq."), strings.TrimPrefix(q.Get("id"), "eq.")
+	}
+	f.mu.Lock()
+	n, reply := len(f.calls), f.reply
+	f.calls = append(f.calls, c)
+	f.mu.Unlock()
+	if reply != nil && reply(n, w) {
+		return
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	row := [2]string{c.Owner, c.Record}
+	_, exists := f.rows[row]
+	found := `[{"user_id":"` + c.Owner + `"}]`
+	switch {
+	case c.Table == "records" && r.Method == http.MethodDelete && exists:
+		delete(f.rows, row)
+	case c.Table == "records" && (r.Method == http.MethodPost || r.Method == http.MethodPatch && exists):
+		f.rows[row] = c.Note + "/" + c.Secret
+	default:
+		found = "[]"
+	}
+	if r.Method == http.MethodPost {
+		w.WriteHeader(http.StatusCreated)
+	}
+	w.Write([]byte(found))
+}
+
+func (f *fake) writes() []call {
+	calls, _ := f.snapshot()
+	return calls
+}
+
+func (f *fake) server() Server {
+	return Server{URL: f.URL, Key: "ключ-сервера", Client: f.Client(), Log: log.New(&f.log, "", 0)}
+}
+
+func (f *fake) snapshot() ([]call, map[[2]string]string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	rows := map[[2]string]string{}
+	for k, v := range f.rows {
+		rows[k] = v
+	}
+	return append([]call(nil), f.calls...), rows
+}
+
+type syncBuffer struct {
+	mu  sync.Mutex
+	buf bytes.Buffer
+}
+
+func (b *syncBuffer) Write(p []byte) (int, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buf.Write(p)
+}
+
+func (b *syncBuffer) lines(substr string) []string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	var got []string
+	for _, l := range strings.Split(b.buf.String(), "\n") {
+		if l != "" && strings.Contains(l, substr) {
+			got = append(got, l)
+		}
+	}
+	return got
+}

@@ -44,7 +44,7 @@ func refusesPlain(t testing.TB, addr, password string) {
 	info, err := r.ReadString('\n')
 	require.NoError(t, err, "очередь не прислала INFO")
 	assert.Contains(t, info, `"tls_required":true`, "очередь не требует TLS")
-	_, err = fmt.Fprintf(conn, "CONNECT {\"user\":%q,\"pass\":%q}\r\nPING\r\n", clientUser, password)
+	_, err = fmt.Fprintf(conn, "CONNECT {\"user\":%q,\"pass\":%q}\r\nPING\r\n", adminUser, password)
 	require.NoError(t, err, "команда CONNECT не отправлена")
 	rest, err := io.ReadAll(r)
 	require.NoError(t, err, "очередь не закрыла соединение без TLS")

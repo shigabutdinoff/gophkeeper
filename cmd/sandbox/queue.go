@@ -25,7 +25,7 @@ func prepareQueue(ctx context.Context, q queueAccess) error {
 	if err = ensureStream(ctx, nc, cfg); err != nil {
 		return fmt.Errorf("поток изменений: %w", err)
 	}
-	return checkClient(ctx, q.URL, cfg, q.Client)
+	return nil
 }
 
 func ensureStream(ctx context.Context, nc *nats.Conn, cfg jetstream.StreamConfig) error {

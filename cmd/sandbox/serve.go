@@ -15,7 +15,7 @@ func serve(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	opts, err := serverOptions(p.state, sandboxPort)
+	opts, seed, err := serverOptions(p.state, sandboxPort)
 	if err != nil {
 		return err
 	}
@@ -29,14 +29,20 @@ func serve(cmd *cobra.Command, _ []string) error {
 	if !s.ReadyForConnections(queueTimeout) {
 		return errors.New("очередь песочницы не запустилась")
 	}
-	closeStop, err := listenStop(s, p.state)
+	ctx, stop := signal.NotifyContext(cmd.Context(), syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
+	defer stop()
+	closeStop, err := listenStop(s, p.state, stop)
 	if err != nil {
 		return err
 	}
 	defer closeStop()
-	ctx, stop := signal.NotifyContext(cmd.Context(), syscall.SIGQUIT)
-	defer stop()
-	go func() { <-ctx.Done(); s.Shutdown() }()
-	s.WaitForShutdown()
+	done, err := runWorker(ctx, s, p.state, seed)
+	if err != nil {
+		return err
+	}
+	if err = done.Wait(); err != nil {
+		s.Errorf("обработчик очереди изменений: %v", err)
+		<-ctx.Done()
+	}
 	return nil
 }

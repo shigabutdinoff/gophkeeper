@@ -9,6 +9,7 @@ stdout 'песочница уже запущена'
 
 publish changes.anna
 stdout '^1$'
+stranger
 
 exec sandbox down
 stdout 'песочница остановлена'

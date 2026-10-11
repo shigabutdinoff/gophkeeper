@@ -40,7 +40,7 @@ func TestSandboxSecrets(t *testing.T) {
 	files := readFiles(t, state)
 	require.NoError(t, sandboxSecrets(state), "повторный запуск не прошёл")
 	assert.Equal(t, files, readFiles(t, state), "повторный запуск перевыпустил сертификаты или секреты")
-	assert.NotEqual(t, files["admin"], files["client"], "пароли администратора и клиента совпали")
+	assert.NotContains(t, files, "client", "в песочнице остался общий пароль клиента")
 	snaps.MatchSnapshot(t, slices.Sorted(maps.Keys(files)))
 }
 

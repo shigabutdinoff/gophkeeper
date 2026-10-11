@@ -5,8 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"time"
 
 	"github.com/nats-io/nats.go"
+
+	"github.com/shigabutdinoff/gophkeeper/internal/worker"
 )
 
 func stop(ctx context.Context, state string) (bool, error) {
@@ -26,7 +29,7 @@ func stop(ctx context.Context, state string) (bool, error) {
 	}
 	defer nc.Close()
 	closed := nc.StatusChanged(nats.CLOSED)
-	ctx, cancel := context.WithTimeout(ctx, queueTimeout)
+	ctx, cancel := context.WithTimeout(ctx, queueTimeout+worker.Grace+5*time.Second)
 	defer cancel()
 	if _, err = nc.RequestWithContext(ctx, stopSubject, nil); err != nil {
 		return false, fmt.Errorf("остановка очереди песочницы: %w", err)

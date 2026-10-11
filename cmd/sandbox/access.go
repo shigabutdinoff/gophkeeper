@@ -12,7 +12,6 @@ import (
 const (
 	stopSubject = "sandbox.stop"
 	adminUser   = "admin"
-	clientUser  = "client"
 	caFile      = "ca.pem"
 	certFile    = "cert.pem"
 	keyFile     = "key.pem"
@@ -40,6 +39,5 @@ func sandboxUser(state, user string) (nats.Option, error) {
 
 func sandboxAccess(state string) (queueAccess, error) {
 	admin, err := sandboxUser(state, adminUser)
-	client, cerr := sandboxUser(state, clientUser)
-	return queueAccess{sandboxQueue, admin, client}, errors.Join(err, cerr)
+	return queueAccess{URL: sandboxQueue, Admin: admin}, err
 }

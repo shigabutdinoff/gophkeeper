@@ -4,7 +4,7 @@
 ---
 
 [TestSandboxSecrets - 1]
-[]string{"admin", "ca.pem", "cert.pem", "client", "key.pem"}
+[]string{"admin", "ca.pem", "cert.pem", "key.pem"}
 ---
 
 [TestSandboxSettings/пустое_окружение - 1]

@@ -11,11 +11,6 @@ import (
 
 const synadiaURL = "tls://connect.ngs.global"
 
-type queueAccess struct {
-	URL           string
-	Admin, Client nats.Option
-}
-
 func cloud(cmd *cobra.Command, _ []string) error {
 	c, err := parseEnv[cloudConfig]()
 	if err != nil {
@@ -39,6 +34,9 @@ func connectCloud(ctx context.Context, c cloudConfig, p sandboxPaths, q queueAcc
 		return placement{}, fmt.Errorf("учётные данные клиента очереди: %w", err)
 	}
 	if err = prepareQueue(ctx, q); err != nil {
+		return placement{}, err
+	}
+	if err = refusesStranger(q); err != nil {
 		return placement{}, err
 	}
 	data, err := saveCloud(c, q.URL, p.state, creds)

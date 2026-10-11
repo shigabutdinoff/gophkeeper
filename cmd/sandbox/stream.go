@@ -21,7 +21,3 @@ func loadStream() (jetstream.StreamConfig, error) {
 	}
 	return cfg, nil
 }
-
-func clientSubject(cfg jetstream.StreamConfig) string {
-	return cfg.Subjects[0]
-}

@@ -7,7 +7,7 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-func listenStop(s *server.Server, state string) (func(), error) {
+func listenStop(s *server.Server, state string, stop func()) (func(), error) {
 	admin, err := sandboxUser(state, adminUser)
 	if err != nil {
 		return nil, err
@@ -17,6 +17,9 @@ func listenStop(s *server.Server, state string) (func(), error) {
 		return nil, fmt.Errorf("подключение к очереди песочницы: %w", err)
 	}
 	_, err = nc.Subscribe(stopSubject, func(m *nats.Msg) {
+		if m.Reply == "" {
+			return
+		}
 		s.Noticef("получена команда %s", stopSubject)
 		if rerr := m.Respond(nil); rerr != nil {
 			s.Errorf("ответ на %s: %v", stopSubject, rerr)
@@ -24,7 +27,7 @@ func listenStop(s *server.Server, state string) (func(), error) {
 		if ferr := nc.Flush(); ferr != nil {
 			s.Errorf("отправка ответа на %s: %v", stopSubject, ferr)
 		}
-		go s.Shutdown()
+		stop()
 	})
 	if err != nil {
 		nc.Close()

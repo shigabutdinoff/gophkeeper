@@ -19,5 +19,8 @@ func envError(err error) error {
 			keys = append(keys, empty.Key)
 		}
 	}
+	if bad, isBad := errors.AsType[env.ParseError](err); isBad && len(keys) == 0 {
+		return bad.Err
+	}
 	return fmt.Errorf("не заданы %s", strings.Join(keys, ", "))
 }

@@ -24,10 +24,10 @@ func clearCloudEnv(t *testing.T) {
 	}
 }
 
-func startCloudQueue(t *testing.T, client *server.Permissions) string {
+func startCloudQueue(t *testing.T, users ...*server.User) string {
 	opts := natstest.DefaultTestOptions
 	opts.Port, opts.JetStream, opts.StoreDir = server.RANDOM_PORT, true, t.TempDir()
-	opts.Users = []*server.User{{Username: "admin", Password: "admin-pass"}, {Username: "client", Password: "client-pass", Permissions: client}}
+	opts.Users = append([]*server.User{{Username: "admin", Password: "admin-pass"}}, users...)
 	s := natstest.RunServer(&opts)
 	t.Cleanup(s.Shutdown)
 	require.NoError(t, s.GlobalAccount().UpdateJetStreamLimits(map[string]server.JetStreamAccountLimits{
@@ -37,13 +37,6 @@ func startCloudQueue(t *testing.T, client *server.Permissions) string {
 	return s.ClientURL()
 }
 
-func clientOnlyAdds() *server.Permissions {
-	return &server.Permissions{
-		Publish:   &server.SubjectPermission{Allow: []string{"changes.>"}},
-		Subscribe: &server.SubjectPermission{Allow: []string{queueInbox + ".>"}},
-	}
-}
-
 func cloudValues(t *testing.T) cloudConfig {
 	creds := filepath.Join(t.TempDir(), "client.creds")
 	require.NoError(t, os.WriteFile(creds, []byte("ЗАГЛУШКА CREDS\n"), 0o600), "учётные данные не записаны")
@@ -51,7 +44,7 @@ func cloudValues(t *testing.T) cloudConfig {
 }
 
 func TestConnectCloud(t *testing.T) {
-	url := startCloudQueue(t, clientOnlyAdds())
+	url := startCloudQueue(t)
 	admin := nats.UserInfo("admin", "admin-pass")
 	q := queueAccess{url, admin, nats.UserInfo("client", "client-pass")}
 	dir := t.TempDir()
@@ -79,12 +72,12 @@ func TestConnectCloud(t *testing.T) {
 	snaps.MatchSnapshot(t, strings.NewReplacer(dir, "<dir>", url, "<queue>").Replace(strings.Join([]string{msg.String(), again.String(), string(settings)}, "\n")))
 }
 
-func TestConnectCloudBroadClient(t *testing.T) {
-	url := startCloudQueue(t, nil)
+func TestConnectCloudOpenQueue(t *testing.T) {
+	url := startCloudQueue(t, &server.User{Username: "client", Password: "client-pass"})
 	dir := t.TempDir()
 	_, err := connectCloud(t.Context(), cloudValues(t), sandboxPaths{filepath.Join(dir, "cloud"), filepath.Join(dir, "config.yaml")},
 		queueAccess{url, nats.UserInfo("admin", "admin-pass"), nats.UserInfo("client", "client-pass")})
-	require.Error(t, err, "клиент с лишними правами принят")
+	require.Error(t, err, "очередь, которая пускает устройство без входа, принята")
 	assert.NoDirExists(t, filepath.Join(dir, "cloud"), "настройки записаны при отказе")
 	snaps.MatchSnapshot(t, err.Error())
 }
@@ -124,15 +117,4 @@ func TestCloudCommand(t *testing.T) {
 	p, err := paths("cloud")
 	require.NoError(t, err, "пути настроек не получены")
 	assert.Equal(t, filepath.Join(filepath.Dir(p.client), "cloud"), p.state, "каталог облака не рядом с файлом настроек")
-}
-
-func TestCheckClientPartlyDenied(t *testing.T) {
-	url := startCloudQueue(t, &server.Permissions{
-		Publish:   &server.SubjectPermission{Allow: []string{">"}},
-		Subscribe: &server.SubjectPermission{Allow: []string{queueInbox + ".>"}},
-	})
-	cfg, err := loadStream()
-	require.NoError(t, err, "поток изменений не прочитан")
-	err = checkClient(context.Background(), url, cfg, nats.UserInfo("client", "client-pass"))
-	assert.Error(t, err, "клиент с правом запросов к JetStream принят")
 }

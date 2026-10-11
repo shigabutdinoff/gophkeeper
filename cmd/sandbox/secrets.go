@@ -16,10 +16,7 @@ func sandboxSecrets(state string) error {
 	if err != nil {
 		return err
 	}
-	if err = once(filepath.Join(state, adminUser)); err != nil {
-		return err
-	}
-	return once(filepath.Join(state, clientUser))
+	return once(filepath.Join(state, adminUser))
 }
 
 func once(path string) error {

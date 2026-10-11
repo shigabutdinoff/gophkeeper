@@ -8,6 +8,9 @@ import (
 )
 
 func up(cmd *cobra.Command, _ []string) error {
+	if _, err := parseEnv[serviceConfig](); err != nil {
+		return err
+	}
 	p, err := paths(sandboxName)
 	if err != nil {
 		return err
