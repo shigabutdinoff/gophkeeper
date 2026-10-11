@@ -1,0 +1,8 @@
+
+[TestOperatorMode - 1]
+[]string{"nats: permissions violation: Permissions Violation for Publish to \"changes.records.0199b5e4-0000-7000-8000-0000000b0715\"", "nats: permissions violation: Permissions Violation for Subscription to \"changes.>\""}
+---
+
+[TestServeBadAccount - 1]
+учётная запись очереди задана не открытым ключом
+---
