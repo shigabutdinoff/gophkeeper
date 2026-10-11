@@ -17,6 +17,10 @@ gophkeeper completion <оболочка>   # скрипт автодополне
 gophkeeper register                # регистрация по email и паролю
 gophkeeper login                   # вход по email и паролю
 gophkeeper logout                  # выход на этом устройстве
+gophkeeper add --login <логин>     # логин и пароль, флаг --note добавляет пометку
+gophkeeper add --type text         # текст из stdin до конца ввода
+gophkeeper add --type card         # номер, срок, имя и код банковской карты
+gophkeeper delete <идентификатор>  # удаление записи
 ```
 
 ## Установка

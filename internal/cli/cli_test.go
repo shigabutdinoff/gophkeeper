@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"testing"
 
@@ -14,6 +15,10 @@ func execute(args ...string) (out, errOut string, err error) {
 }
 
 func executeIn(in io.Reader, args ...string) (out, errOut string, err error) {
+	return executeCtx(context.Background(), in, args...)
+}
+
+func executeCtx(ctx context.Context, in io.Reader, args ...string) (out, errOut string, err error) {
 	var stdout, stderr bytes.Buffer
 	root := New("27.0", "27A41", "2026-09-28", "3f2a9c1", &stdout, &stderr)
 	root.SetIn(in)
@@ -21,7 +26,7 @@ func executeIn(in io.Reader, args ...string) (out, errOut string, err error) {
 		args = []string{}
 	}
 	root.SetArgs(args)
-	err = root.Execute()
+	err = root.ExecuteContext(ctx)
 	return stdout.String(), stderr.String(), err
 }
 

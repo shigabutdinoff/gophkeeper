@@ -1,0 +1,19 @@
+env XDG_CONFIG_HOME=$WORK
+env GOPHKEEPER_SERVER=
+mkdir $WORK/gophkeeper
+cp config.yaml $WORK/gophkeeper/config.yaml
+
+! exec gophkeeper add --login anna
+! stdout .
+cmp stderr loggedout.txt
+
+! exec gophkeeper add --type bogus
+! stdout .
+stderr '^Ошибка: неизвестный тип записи "bogus", допустимы text и card$'
+
+-- config.yaml --
+server: https://example.invalid
+app_key: ключ-приложения
+queue: tls://127.0.0.1:1
+-- loggedout.txt --
+Ошибка: сначала войдите в GophKeeper: gophkeeper login

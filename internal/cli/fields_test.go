@@ -13,6 +13,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var card = map[string]string{"type": "card", "number": "4111 1111 1111 1111", "expiry": "12/28", "holder": "ANNA IVANOVA", "code": "123"}
+
+func typing(t *testing.T, values ...string) {
+	t.Helper()
+	keyboard(t, true)
+	setVar(t, &runForm, func(_ *cobra.Command, f *huh.Form) error {
+		pump(f, f.Init())
+		for _, v := range values {
+			enter(f, v)
+		}
+		return nil
+	})
+}
+
 func enter(f *huh.Form, value string) {
 	for _, r := range value {
 		f.Update(tea.KeyPressMsg(tea.Key{Text: string(r), Code: r}))
@@ -40,8 +54,73 @@ func pump(f *huh.Form, cmd tea.Cmd) {
 	}
 }
 
+func fieldsOf(t *testing.T, name string, in *os.File, old map[string]string) (map[string]string, string, error) {
+	t.Helper()
+	k, err := kindOf(name)
+	require.NoError(t, err, "тип %q не найден", name)
+	var errOut bytes.Buffer
+	c := &cobra.Command{}
+	c.SetIn(in)
+	c.SetErr(&errOut)
+	got, err := askFields(c, k, old)
+	return got, errOut.String(), err
+}
+
+func TestFieldsText(t *testing.T) {
+	keyboard(t, false)
+	got, errOut, err := fieldsOf(t, "text", input(t, "abcd-1234\nefgh-5678\n\nijkl-9012\n"), nil)
+	require.NoError(t, err, "текст не прочитан")
+	assert.Equal(t, map[string]string{"type": "text", "text": "abcd-1234\nefgh-5678\n\nijkl-9012\n"}, got, "текст изменён")
+	assert.Empty(t, errOut, "подсказка напечатана без терминала")
+}
+
+func TestFieldsTextEmpty(t *testing.T) {
+	keyboard(t, true)
+	_, errOut, err := fieldsOf(t, "text", input(t, ""), nil)
+	assert.EqualError(t, err, "текст не может быть пустым", "пустой текст принят")
+	assert.Equal(t, "Текст, конец ввода Ctrl-D:\n", errOut, "нет подсказки в терминале")
+	got, _, err := fieldsOf(t, "text", input(t, ""), map[string]string{"type": "text", "text": "прежний"})
+	require.NoError(t, err, "пустой ввод при правке отклонён")
+	assert.Equal(t, "прежний", got["text"], "прежний текст не сохранён")
+}
+
+func TestFieldsCard(t *testing.T) {
+	typing(t, "4111 1111 1111 1111", "12/28", "ANNA IVANOVA", "123")
+	got, _, err := fieldsOf(t, "card", input(t, ""), nil)
+	require.NoError(t, err, "карта не прочитана")
+	assert.Equal(t, card, got, "карта прочитана не та")
+}
+
+func TestFieldsCardKept(t *testing.T) {
+	typing(t, "", "01/30", "", "")
+	got, _, err := fieldsOf(t, "card", input(t, ""), card)
+	require.NoError(t, err, "правка карты не прочитана")
+	assert.Equal(t, map[string]string{"type": "card", "number": "4111 1111 1111 1111", "expiry": "01/30", "holder": "ANNA IVANOVA", "code": "123"}, got, "прежние поля не сохранены")
+}
+
+func TestFieldsCardEmpty(t *testing.T) {
+	typing(t, "", "", "", "")
+	_, _, err := fieldsOf(t, "card", input(t, ""), nil)
+	assert.EqualError(t, err, "номер не может быть пустым", "пустой номер принят")
+	typing(t, "4111", "", "", "")
+	got, _, err := fieldsOf(t, "card", input(t, ""), nil)
+	require.NoError(t, err, "карта без срока, имени и кода отклонена")
+	assert.Equal(t, map[string]string{"type": "card", "number": "4111", "expiry": "", "holder": "", "code": ""}, got, "не та карта")
+}
+
+func TestFieldsCardNotTerminal(t *testing.T) {
+	keyboard(t, false, "4111")
+	_, _, err := fieldsOf(t, "card", input(t, "12/28\n"), nil)
+	assert.EqualError(t, err, "пароль вводится только с клавиатуры", "карта не с клавиатуры принята")
+}
+
+func TestKindUnknown(t *testing.T) {
+	_, err := kindOf("bogus")
+	assert.EqualError(t, err, `неизвестный тип записи "bogus", допустимы text и card`, "неизвестный тип принят")
+}
+
 func TestFormQuit(t *testing.T) {
-	in := keyboard(t, true, "")
+	keyboard(t, true)
 	setVar(t, &runForm, func(_ *cobra.Command, f *huh.Form) error {
 		pump(f, f.Init())
 		for _, r := range "hunter" {
@@ -52,7 +131,7 @@ func TestFormQuit(t *testing.T) {
 	code := 0
 	setVar(t, &exit, func(c int) { code = c })
 	c := &cobra.Command{}
-	c.SetIn(in)
+	c.SetIn(input(t, ""))
 	_, err := askHidden(c, "Пароль")
 	assert.Error(t, err, "недовведённый пароль принят")
 	assert.Equal(t, interruptCode, code, "оборванная форма не завершила команду")

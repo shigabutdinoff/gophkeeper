@@ -29,3 +29,11 @@ func fill(c *cobra.Command, inputs ...huh.Field) error {
 	}
 	return err
 }
+
+func askForm(c *cobra.Command, k kind, vals []string) error {
+	inputs := make([]huh.Field, len(k.fields))
+	for i, f := range k.fields {
+		inputs[i] = huh.NewInput().Title(f.label).EchoMode(f.echo).Value(&vals[i])
+	}
+	return fill(c, inputs...)
+}

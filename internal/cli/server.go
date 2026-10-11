@@ -2,7 +2,6 @@ package cli
 
 import (
 	"cmp"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -34,7 +33,7 @@ func resolve(flag string) (config.Settings, error) {
 		return config.Settings{}, fmt.Errorf("не задан адрес сервера: укажите переменную %s, флаг --server или server в файле %s", serverEnv, path)
 	}
 	if !strings.HasPrefix(server, "https://") {
-		return config.Settings{}, errors.New("сервер должен работать по защищённому соединению (https)")
+		return config.Settings{}, config.ErrInsecureServer
 	}
 	server = strings.TrimSuffix(server, "/")
 	if s.AppKey == "" || server != strings.TrimSuffix(s.Server, "/") {

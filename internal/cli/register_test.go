@@ -62,17 +62,25 @@ func setVar[T any](t *testing.T, v *T, value T) {
 	t.Cleanup(func() { *v = old })
 }
 
-func keyboard(t *testing.T, terminal bool, password string) *os.File {
+func keyboard(t *testing.T, terminal bool, passwords ...string) *os.File {
 	t.Helper()
 	setVar(t, &isTerminal, func(uintptr) bool { return terminal })
+	var n atomic.Int32
 	setVar(t, &runForm, func(_ *cobra.Command, f *huh.Form) error {
 		pump(f, f.Init())
-		enter(f, typedEmail)
-		enter(f, password)
+		if strings.Contains(f.View(), "Email") {
+			enter(f, typedEmail)
+		}
+		enter(f, passwords[min(int(n.Add(1)), len(passwords))-1])
 		return nil
 	})
+	return input(t, typedEmail+"\n")
+}
+
+func input(t *testing.T, text string) *os.File {
+	t.Helper()
 	path := filepath.Join(t.TempDir(), "stdin")
-	require.NoError(t, os.WriteFile(path, []byte(typedEmail+"\n"), 0o600), "email не записан во ввод")
+	require.NoError(t, os.WriteFile(path, []byte(text), 0o600), "ввод не записан")
 	in, err := os.Open(path)
 	require.NoError(t, err, "файл ввода не открыт")
 	t.Cleanup(func() { _ = in.Close() })
@@ -81,20 +89,33 @@ func keyboard(t *testing.T, terminal bool, password string) *os.File {
 
 func settingsFile(t *testing.T, server, appKey string) string {
 	t.Helper()
+	return writeSettings(t, config.Settings{Server: server, AppKey: appKey})
+}
+
+func writeSettings(t *testing.T, s config.Settings) string {
+	t.Helper()
 	home := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", home)
 	t.Setenv(serverEnv, "")
 	dir, err := config.Dir()
 	require.NoError(t, err, "каталог настроек не найден")
 	require.NoError(t, os.MkdirAll(dir, 0o700), "каталог настроек не создан")
-	data, err := yaml.Marshal(config.Settings{Server: server, AppKey: appKey})
+	data, err := yaml.Marshal(s)
 	require.NoError(t, err, "настройки не размечены")
 	require.NoError(t, os.WriteFile(filepath.Join(dir, config.File), data, 0o600), "файл настроек не записан")
 	return home
 }
 
-func ok(w http.ResponseWriter, _ *http.Request) {
-	w.Write([]byte(`{"access_token":"доступ","refresh_token":"обновление"}`))
+const annaID = "0199b5e4-0000-7000-8000-00000000a11a"
+
+func ok(w http.ResponseWriter, r *http.Request) {
+	okAs("доступ")(w, r)
+}
+
+func okAs(access string) http.HandlerFunc {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		json.NewEncoder(w).Encode(map[string]any{"access_token": access, "refresh_token": "обновление", "user": map[string]string{"id": annaID}})
+	}
 }
 
 func TestRegisterHidesPassword(t *testing.T) {
