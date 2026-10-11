@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"runtime"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -46,8 +47,6 @@ func TestSandboxSecrets(t *testing.T) {
 func TestSandboxSettings(t *testing.T) {
 	state := t.TempDir()
 	require.NoError(t, sandboxSecrets(state), "секреты песочницы не созданы")
-	client, err := readPass(state, clientUser)
-	require.NoError(t, err, "пароль клиента не прочитан")
 	for _, c := range []struct {
 		name, url, key, state string
 		missing               bool
@@ -74,7 +73,8 @@ func TestSandboxSettings(t *testing.T) {
 		data, serr := sandboxSettings(state)
 		require.NoError(t, serr, "настройки песочницы не собраны")
 		ca := regexp.MustCompile(`(?s)-----BEGIN CERTIFICATE-----.*-----END CERTIFICATE-----`)
-		snaps.MatchSnapshot(t, ca.ReplaceAllString(strings.ReplaceAll(string(data), string(client), "<client>"), "<ca>"))
+		masked := ca.ReplaceAllString(string(data), "<ca>")
+		snaps.MatchSnapshot(t, strings.ReplaceAll(masked, ":"+strconv.Itoa(sandboxPort)+"\n", ":<port>\n"))
 	})
 }
 

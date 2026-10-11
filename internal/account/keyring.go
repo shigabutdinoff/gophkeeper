@@ -15,6 +15,8 @@ type record struct {
 	Data    string `json:"data_key"`
 	Refresh string `json:"refresh_token"`
 	AppKey  string `json:"app_key"`
+	Access  string `json:"access_token"`
+	User    string `json:"user_id"`
 }
 
 func keep(r record) error {

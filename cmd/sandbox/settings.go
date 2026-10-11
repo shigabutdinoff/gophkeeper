@@ -5,22 +5,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/shigabutdinoff/gophkeeper/internal/config"
 )
 
 const markerPrefix = "# gophkeeper-"
-
-type settings struct {
-	config.Settings `yaml:",inline"`
-
-	Queue      string `yaml:"queue"`
-	QueueUser  string `yaml:"queue_user,omitempty"`
-	QueuePass  string `yaml:"queue_password,omitempty"`
-	QueueCreds string `yaml:"queue_creds_file,omitempty"`
-	QueueInbox string `yaml:"queue_inbox"`
-	QueueCA    string `yaml:"queue_ca,omitempty"`
-}
 
 func marked(source string, data []byte) []byte {
 	head := fmt.Sprintf("%s%s: файл записан командой %s, повторный запуск его заменяет\n", markerPrefix, source, source)

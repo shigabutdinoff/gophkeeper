@@ -3,6 +3,7 @@ package account
 import (
 	"os"
 	"testing"
+	"time"
 
 	"github.com/zalando/go-keyring"
 
@@ -11,5 +12,6 @@ import (
 
 func TestMain(m *testing.M) {
 	keyring.MockInit()
+	retryWait, retryMax = time.Millisecond, 5*time.Millisecond
 	os.Exit(snapstest.CleanM{M: m}.Run())
 }

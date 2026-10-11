@@ -20,6 +20,8 @@ import (
 	"github.com/shigabutdinoff/gophkeeper/internal/config"
 )
 
+const annaID = "0199b5e4-0000-7000-8000-00000000a11a"
+
 type gotrue struct {
 	mu       sync.Mutex
 	calls    []string
@@ -29,11 +31,15 @@ type gotrue struct {
 	bearer   string
 	settings config.Settings
 	client   *http.Client
+	srv      *httptest.Server
+	access   string
+	fail     bool
+	busy     int
 }
 
 func startGotrue(t *testing.T, fail bool) *gotrue {
 	t.Helper()
-	g := &gotrue{}
+	g := &gotrue{fail: fail, access: "доступ"}
 	wrong, _, err := Keys("anna@example.com", "неверный")
 	require.NoError(t, err, "ключ не выведен")
 	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -44,7 +50,10 @@ func startGotrue(t *testing.T, fail bool) *gotrue {
 		json.NewDecoder(r.Body).Decode(&body)
 		g.bodies = append(g.bodies, body)
 		switch {
-		case fail:
+		case g.busy > 0:
+			g.busy--
+			w.WriteHeader(http.StatusServiceUnavailable)
+		case g.fail:
 			w.WriteHeader(http.StatusBadGateway)
 		case r.Header.Get("apikey") != "ключ":
 			w.WriteHeader(http.StatusUnauthorized)
@@ -59,10 +68,12 @@ func startGotrue(t *testing.T, fail bool) *gotrue {
 			w.Write([]byte(`{"code":400,"error_code":"invalid_credentials","msg":"Invalid login credentials"}`))
 		default:
 			g.refresh++
-			_ = json.NewEncoder(w).Encode(map[string]string{"access_token": "доступ", "refresh_token": "обновление-" + string(rune('0'+g.refresh))})
+			_ = json.NewEncoder(w).Encode(map[string]any{"access_token": g.access, "refresh_token": "обновление-" + string(rune('0'+g.refresh)),
+				"user": map[string]string{"id": annaID}})
 		}
 	}))
 	t.Cleanup(srv.Close)
+	g.srv = srv
 	g.client = srv.Client()
 	g.client.Timeout = 2 * time.Second
 	g.settings = config.Settings{Server: srv.URL, AppKey: "ключ"}
@@ -84,6 +95,12 @@ func (g *gotrue) state() ([]map[string]string, string) {
 	return append([]map[string]string(nil), g.bodies...), g.bearer
 }
 
+func (g *gotrue) set(change func(g *gotrue)) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	change(g)
+}
+
 func (g *gotrue) revoke() {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -103,7 +120,7 @@ func TestLoginStoresKeyOutsideConfig(t *testing.T) {
 	assert.Equal(t, map[string]string{"email": "anna@example.com", "password": auth}, bodies[0], "на сервер ушёл не ключ входа")
 	r, ok := recall()
 	require.True(t, ok, "записи в хранилище нет")
-	assert.Equal(t, record{Server: g.settings.Server, Email: "anna@example.com", Data: data, Refresh: "обновление-1", AppKey: "ключ"}, r, "в хранилище не тот ключ")
+	assert.Equal(t, record{Server: g.settings.Server, Email: "anna@example.com", Data: data, Refresh: "обновление-1", AppKey: "ключ", Access: "доступ", User: annaID}, r, "в хранилище не та запись входа")
 	dir, err := config.Dir()
 	require.NoError(t, err, "каталог настроек не найден")
 	files, err := os.ReadDir(dir)
@@ -113,6 +130,7 @@ func TestLoginStoresKeyOutsideConfig(t *testing.T) {
 		require.NoError(t, err, "файл не прочитан")
 		assert.NotContains(t, string(content), data, "ключ к данным на диске")
 		assert.NotContains(t, string(content), "обновление", "токен обновления на диске")
+		assert.NotContains(t, string(content), "доступ", "токен доступа на диске")
 	}
 	snaps.MatchSnapshot(t, g.log(t))
 }
@@ -127,10 +145,11 @@ func TestLoginWithoutKeyring(t *testing.T) {
 	require.NoError(t, err, "email не сохранён")
 	assert.Equal(t, "anna@example.com", email, "сохранён не тот email")
 	asked := ""
-	data, err := Unlock(t.Context(), g.client, g.settings, func(e string) (string, error) { asked = e; return "пароль-Анны", nil })
+	keys, err := Unlock(t.Context(), g.client, g.settings, func(e string) (string, error) { asked = e; return "пароль-Анны", nil })
 	require.NoError(t, err, "ключ не получен по паролю")
 	_, want, _ := Keys("anna@example.com", "пароль-Анны")
-	assert.Equal(t, want, data, "ключ к данным не тот")
+	assert.Equal(t, want, keys.Data, "ключ к данным не тот")
+	assert.Equal(t, []string{"доступ", annaID}, []string{keys.Access, keys.User}, "токен доступа и пользователь не те")
 	assert.Equal(t, "anna@example.com", asked, "пароль спрошен не для email входа")
 	_, err = Unlock(t.Context(), g.client, g.settings, noAsk)
 	require.Error(t, err, "отказ ввода пароля не вернул ошибку")
@@ -153,6 +172,7 @@ func TestUnlockRotatesRefresh(t *testing.T) {
 	g := startGotrue(t, false)
 	_, err := Unlock(t.Context(), g.client, g.settings, noAsk)
 	require.ErrorIs(t, err, ErrLoggedOut, "без входа ключ выдан")
+	assert.ErrorContains(t, err, "сначала войдите в GophKeeper", "ошибка без входа не просит войти")
 	_, err = Login(t.Context(), g.client, g.settings, "anna@example.com", "пароль-Анны")
 	require.NoError(t, err, "вход не прошёл")
 	for range 2 {
@@ -163,7 +183,7 @@ func TestUnlockRotatesRefresh(t *testing.T) {
 	assert.Equal(t, "обновление-3", r.Refresh, "новый токен обновления не сохранён")
 	snaps.MatchSnapshot(t, g.log(t))
 	bodies, _ := g.state()
-	snaps.MatchJSON(t, bodies[1:])
+	snaps.MatchJSON(t, bodies[2:])
 }
 
 func TestLogout(t *testing.T) {
@@ -203,10 +223,10 @@ func TestUnlockIgnoresOtherAccount(t *testing.T) {
 	require.NoError(t, err, "путь входа не найден")
 	require.NoError(t, os.WriteFile(path, []byte("server: "+g.settings.Server+"\nemail: boris@example.com\n"), 0o600), "файл входа не записан")
 	asked := ""
-	data, err := Unlock(t.Context(), g.client, g.settings, func(e string) (string, error) { asked = e; return "пароль-Бориса", nil })
+	keys, err := Unlock(t.Context(), g.client, g.settings, func(e string) (string, error) { asked = e; return "пароль-Бориса", nil })
 	require.NoError(t, err, "ключ не получен по паролю")
 	_, want, _ := Keys("boris@example.com", "пароль-Бориса")
-	assert.Equal(t, want, data, "выдан ключ чужой записи")
+	assert.Equal(t, want, keys.Data, "выдан ключ чужой записи")
 	assert.Equal(t, "boris@example.com", asked, "пароль спрошен не для email входа")
 }
 

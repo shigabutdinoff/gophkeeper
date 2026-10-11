@@ -8,11 +8,15 @@ var (
 	// ErrCredentials сообщает, что email или пароль не подошли.
 	ErrCredentials = errors.New("неверный email или пароль")
 	// ErrLoggedOut сообщает, что на этом устройстве вход не выполнен.
-	ErrLoggedOut = errors.New("сначала войдите: gophkeeper login")
+	ErrLoggedOut = errors.New("сначала войдите в GophKeeper: gophkeeper login")
 	// ErrNoAnswer сообщает, что сервер недоступен или не ответил вовремя.
 	ErrNoAnswer = errors.New("сервер не отвечает, попробуйте позже")
 	// ErrServer сообщает о незнакомой ошибке сервера без её подробностей.
 	ErrServer = errors.New("сервер вернул ошибку, попробуйте позже")
+	// ErrUnavailable сообщает, что соединения с сервером нет.
+	ErrUnavailable = errors.New("сервер недоступен, попробуйте позже")
+	// ErrNotFound сообщает, что записи нет у владельца.
+	ErrNotFound = errors.New("запись не найдена")
 )
 
 var codes = map[string]error{

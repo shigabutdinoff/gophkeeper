@@ -12,9 +12,6 @@
 [TestUnlockRotatesRefresh - 2]
 [
  {
-  "refresh_token": "обновление-1"
- },
- {
   "refresh_token": "обновление-2"
  }
 ]

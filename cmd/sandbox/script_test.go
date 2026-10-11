@@ -41,18 +41,24 @@ func TestScripts(t *testing.T) {
 	})
 }
 
-func publish(ts *testscript.TestScript, neg bool, args []string) {
-	if neg || len(args) != 1 {
-		ts.Fatalf("использование: publish <тема>")
-	}
-	var c settings
-	ts.Check(yaml.Unmarshal([]byte(ts.ReadFile(filepath.Join(ts.Getenv("CONFIG"), "gophkeeper", config.File))), &c))
+func dial(ts *testscript.TestScript, opts ...nats.Option) (*nats.Conn, error) {
+	var c config.Settings
+	dir := filepath.Join(ts.Getenv("CONFIG"), "gophkeeper")
+	ts.Check(yaml.Unmarshal([]byte(ts.ReadFile(filepath.Join(dir, config.File))), &c))
 	roots := x509.NewCertPool()
 	if !roots.AppendCertsFromPEM([]byte(c.QueueCA)) {
 		ts.Fatalf("CA очереди не разобран")
 	}
-	nc, err := nats.Connect(c.Queue, nats.UserInfo(c.QueueUser, c.QueuePass), nats.CustomInboxPrefix(c.QueueInbox),
-		nats.Secure(&tls.Config{RootCAs: roots, MinVersion: tls.VersionTLS12}))
+	pass := ts.ReadFile(filepath.Join(dir, sandboxName, adminUser))
+	return nats.Connect(c.Queue, append([]nats.Option{nats.UserInfo(adminUser, pass),
+		nats.Secure(&tls.Config{RootCAs: roots, MinVersion: tls.VersionTLS12})}, opts...)...)
+}
+
+func publish(ts *testscript.TestScript, neg bool, args []string) {
+	if neg || len(args) != 1 {
+		ts.Fatalf("использование: publish <тема>")
+	}
+	nc, err := dial(ts)
 	ts.Check(err)
 	defer nc.Close()
 	js, err := jetstream.New(nc)

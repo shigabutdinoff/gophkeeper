@@ -8,40 +8,28 @@ import (
 	"github.com/shigabutdinoff/gophkeeper/internal/config"
 )
 
-// Unlock возвращает ключ к данным для команд с данными. Без входа
-// возвращает ErrLoggedOut. Без системного хранилища спрашивает у ask пароль
-// для email входа, и тогда ключ живёт только в памяти.
+// Unlock возвращает ключ и токен доступа для команд с данными. При сбое
+// сервера берёт их из хранилища секретов и кладёт причину в Down. Без
+// входа ErrLoggedOut, без хранилища спрашивает у ask пароль для email.
 func Unlock(ctx context.Context, client *http.Client, s config.Settings,
-	ask func(email string) (string, error)) (string, error) {
+	ask func(email string) (string, error)) (Secrets, error) {
 	email, err := loadEmail(s.Server)
 	if err != nil {
-		return "", err
+		return Secrets{}, err
 	}
 	r, ok := recall()
 	if !ok || r.Email != email || r.Server != s.Server {
-		password, err := ask(email)
-		if err != nil {
-			return "", err
-		}
-		body, data, err := credentials(email, password)
-		if err == nil {
-			_, err = token(ctx, client, s, "password", body)
-		}
-		if err != nil {
-			return "", err
-		}
-		return data, nil
+		return byPassword(ctx, client, s, email, ask)
 	}
 	t, err := refresh(ctx, client, s, r.Refresh)
-	if errors.Is(err, ErrLoggedOut) {
-		err = errors.Join(err, forget())
+	switch {
+	case errors.Is(err, ErrLoggedOut):
+		return Secrets{}, errors.Join(err, forget())
+	case err == nil:
+		r.Refresh, r.Access, r.User = t.Refresh, t.Access, t.User.ID
+		if err = keep(r); err != nil {
+			return Secrets{}, err
+		}
 	}
-	if err != nil {
-		return "", err
-	}
-	r.Refresh = t.Refresh
-	if err = keep(r); err != nil {
-		return "", err
-	}
-	return r.Data, nil
+	return Secrets{Data: r.Data, Access: r.Access, User: r.User, Down: err}, nil
 }
