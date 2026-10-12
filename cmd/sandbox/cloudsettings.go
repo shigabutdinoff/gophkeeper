@@ -33,7 +33,7 @@ func saveCreds(state string, creds []byte) (string, error) {
 
 func cloudSettings(c cloudConfig, queue, creds string) config.Settings {
 	return config.Settings{
-		Server: string(c.Supabase.URL), AppKey: c.Supabase.Key,
+		Server: string(c.Supabase.URL), AppKey: c.Supabase.Key, Region: c.Supabase.Region,
 		Queue: queue, QueueCreds: creds,
 	}
 }

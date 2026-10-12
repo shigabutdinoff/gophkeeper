@@ -51,7 +51,7 @@ func startWorker(ctx context.Context, t *testing.T) (*atomic.Int32, *strings.Bui
 	for k, v := range map[string]string{"CONFIG": "", "GOPHKEEPER_QUEUE": q.Admin.Queue, "GOPHKEEPER_QUEUE_CA": q.Admin.QueueCA,
 		"GOPHKEEPER_QUEUE_USER": q.Admin.QueueUser, "GOPHKEEPER_QUEUE_PASSWORD": q.Admin.QueuePass,
 		"GOPHKEEPER_QUEUE_CREDS_FILE": "", "GOPHKEEPER_SERVER": srv.URL, "GOPHKEEPER_SERVER_KEY": "ключ-сервера",
-		"GOPHKEEPER_ACCESS_SEED": q.Seed} {
+		"GOPHKEEPER_ACCESS_SEED": q.Seed, "GOPHKEEPER_REGION": "eu-north-1", "GOPHKEEPER_APP_KEY": "ключ-приложения"} {
 		t.Setenv(k, v)
 	}
 	msg, _, err := record.Put(base64.RawURLEncoding.EncodeToString(make([]byte, 32)), anna, map[string]string{"login": "anna", "password": "s3cret"}, "")

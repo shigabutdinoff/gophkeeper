@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var cloudVars = []string{supabaseURL, supabaseKey, adminCreds, clientCreds}
+var cloudVars = []string{supabaseURL, supabaseKey, "SUPABASE_REGION", adminCreds, clientCreds}
 
 func clearCloudEnv(t *testing.T) {
 	for _, k := range cloudVars {
@@ -40,7 +40,7 @@ func startCloudQueue(t *testing.T, users ...*server.User) string {
 func cloudValues(t *testing.T) cloudConfig {
 	creds := filepath.Join(t.TempDir(), "client.creds")
 	require.NoError(t, os.WriteFile(creds, []byte("ЗАГЛУШКА CREDS\n"), 0o600), "учётные данные не записаны")
-	return cloudConfig{Supabase: supabaseConfig{URL: "https://project.supabase.co", Key: "ЗАГЛУШКА КЛЮЧА"}, ClientCreds: creds}
+	return cloudConfig{Supabase: supabaseConfig{URL: "https://project.supabase.co", Key: "ЗАГЛУШКА КЛЮЧА", Region: "eu-north-1"}, ClientCreds: creds}
 }
 
 func TestConnectCloud(t *testing.T) {
@@ -96,6 +96,7 @@ func TestCloudEnv(t *testing.T) {
 	require.Error(t, err, "пустое окружение принято")
 	t.Setenv(supabaseURL, "http://project.supabase.co")
 	t.Setenv(supabaseKey, "ключ")
+	t.Setenv("SUPABASE_REGION", "eu-north-1")
 	t.Setenv(adminCreds, "admin.creds")
 	t.Setenv(clientCreds, "client.creds")
 	_, plain := parseEnv[cloudConfig]()

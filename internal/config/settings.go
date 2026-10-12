@@ -12,6 +12,8 @@ type Settings struct {
 	Server string `yaml:"server"`
 	// AppKey задаёт открытый ключ приложения на сервере.
 	AppKey string `yaml:"app_key"`
+	// Region задаёт регион хранилища файлов сервера.
+	Region string `yaml:"region,omitempty"`
 	// Queue задаёт адрес очереди изменений.
 	Queue string `yaml:"queue"`
 	// QueueUser задаёт имя пользователя очереди.

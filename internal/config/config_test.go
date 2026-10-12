@@ -29,10 +29,10 @@ func TestLoad(t *testing.T) {
 	require.NoError(t, err, "отсутствие файла считается ошибкой")
 	assert.Zero(t, s, "без файла настройки не пустые")
 	path := filepath.Join(dir, File)
-	require.NoError(t, os.WriteFile(path, []byte("server: https://x\napp_key: k\nqueue: tls://q\nqueue_user: u\nqueue_password: p\nqueue_creds_file: c\nqueue_ca: ca\n"), 0o600), "файл не записан")
+	require.NoError(t, os.WriteFile(path, []byte("server: https://x\napp_key: k\nregion: r\nqueue: tls://q\nqueue_user: u\nqueue_password: p\nqueue_creds_file: c\nqueue_ca: ca\n"), 0o600), "файл не записан")
 	s, err = Load[Settings](path)
 	require.NoError(t, err, "файл настроек не прочитан")
-	assert.Equal(t, Settings{Server: "https://x", AppKey: "k", Queue: "tls://q", QueueUser: "u", QueuePass: "p",
+	assert.Equal(t, Settings{Server: "https://x", AppKey: "k", Region: "r", Queue: "tls://q", QueueUser: "u", QueuePass: "p",
 		QueueCreds: "c", QueueCA: "ca"}, s, "настройки прочитаны неверно")
 	require.NoError(t, os.WriteFile(path, []byte("server: [\n"), 0o600), "файл не записан")
 	_, err = Load[Settings](path)

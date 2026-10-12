@@ -17,8 +17,9 @@ func (u *httpsURL) UnmarshalText(text []byte) error {
 }
 
 type supabaseConfig struct {
-	URL httpsURL `env:"SUPABASE_URL,notEmpty"`
-	Key string   `env:"SUPABASE_ANON_KEY,notEmpty"`
+	URL    httpsURL `env:"SUPABASE_URL,notEmpty"`
+	Key    string   `env:"SUPABASE_ANON_KEY,notEmpty"`
+	Region string   `env:"SUPABASE_REGION,notEmpty"`
 }
 
 type cloudConfig struct {

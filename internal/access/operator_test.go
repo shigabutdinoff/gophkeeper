@@ -53,7 +53,11 @@ func runOperator(t *testing.T) operatorQueue {
 	sentinel := user(func(c *natsjwt.UserClaims) { c.Pub.Deny.Add(">"); c.Sub.Deny.Add(">") })
 	resolver := &server.MemAccResolver{}
 	for key, edit := range map[string]func(*natsjwt.AccountClaims){system: func(*natsjwt.AccountClaims) {},
-		account: func(c *natsjwt.AccountClaims) { c.SigningKeys.Add(signer); c.Authorization.AuthUsers.Add(adminKey) }} {
+		account: func(c *natsjwt.AccountClaims) {
+			c.SigningKeys.Add(signer)
+			c.Authorization.AuthUsers.Add(adminKey)
+			c.Limits.JetStreamLimits = natsjwt.JetStreamLimits{MemoryStorage: -1, DiskStorage: -1, Streams: -1, Consumer: -1}
+		}} {
 		claims := natsjwt.NewAccountClaims(key)
 		edit(claims)
 		token, err := claims.Encode(operator)
@@ -62,7 +66,7 @@ func runOperator(t *testing.T) operatorQueue {
 	}
 	trusted := natsjwt.NewOperatorClaims(operatorKey)
 	trusted.Issuer = operatorKey
-	s := natstest.RunServer(&server.Options{Host: "127.0.0.1", Port: -1, NoLog: true, NoSigs: true,
+	s := natstest.RunServer(&server.Options{Host: "127.0.0.1", Port: -1, NoLog: true, NoSigs: true, JetStream: true, StoreDir: t.TempDir(),
 		TrustedOperators: []*natsjwt.OperatorClaims{trusted}, SystemAccount: system, AccountResolver: resolver})
 	t.Cleanup(s.Shutdown)
 	return operatorQueue{server: s, account: account, seed: seed, admin: admin, sentinel: sentinel}
@@ -97,6 +101,7 @@ func TestOperatorMode(t *testing.T) {
 	require.NoError(t, err, "своё изменение не дошло")
 	assert.Equal(t, record.Topic(anna), msg.Subject, "дошло чужое изменение")
 	snaps.MatchSnapshot(t, []string{<-errs, <-errs})
+	assert.EqualValues(t, 19, putObject(t, nc, openBucket(t, nc, anna), []byte("шифр файла")).Size, "файл в режиме оператора записан не целиком")
 }
 
 func TestServeBadAccount(t *testing.T) {

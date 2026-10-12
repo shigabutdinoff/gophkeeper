@@ -9,6 +9,8 @@ import (
 	"github.com/avast/retry-go/v5"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
+
+	"github.com/shigabutdinoff/gophkeeper/internal/storage"
 )
 
 // Server описывает сервер, к которому обработчик применяет изменения.
@@ -21,6 +23,10 @@ type Server struct {
 	Client *http.Client
 	// Log принимает строки журнала без секретов.
 	Log *log.Logger
+	// Files хранит файлы записей на сервере.
+	Files *storage.Client
+	// Seed задаёт ключ, из которого выводятся имена корзин файлов.
+	Seed string
 }
 
 // Run применяет изменения из очереди js к серверу s, пока не отменён ctx.

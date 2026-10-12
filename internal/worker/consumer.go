@@ -33,7 +33,7 @@ func consume(ctx, work context.Context, js jetstream.JetStream, s Server) error 
 		msg, err := c.Next(jetstream.FetchContext(ctx), jetstream.FetchHeartbeat(heartbeat))
 		switch {
 		case err == nil:
-			handle(work, msg, s)
+			handle(work, js, msg, s)
 		case ctx.Err() != nil:
 			return nil
 		case !errors.Is(err, nats.ErrTimeout):

@@ -3,13 +3,18 @@ package worker
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/shigabutdinoff/gophkeeper/internal/storage"
 )
+
+const s3Path = "/storage/v1/s3/files/"
 
 type call struct {
 	Method string `json:"-"`
@@ -29,16 +34,55 @@ type fake struct {
 	calls []call
 	reply func(n int, w http.ResponseWriter) bool
 	log   syncBuffer
+
+	objects map[string]string
+	trace   []string
+	files   func(n int, w http.ResponseWriter) bool
+}
+
+func (f *fake) serveS3(w http.ResponseWriter, r *http.Request) {
+	key := strings.TrimPrefix(r.URL.Path, s3Path)
+	body, _ := io.ReadAll(r.Body)
+	f.mu.Lock()
+	n, files := len(f.trace), f.files
+	f.trace = append(f.trace, r.Method+" "+key+" "+r.Header.Get("X-Amz-Security-Token"))
+	f.mu.Unlock()
+	if files != nil && files(n, w) {
+		return
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	switch r.Method {
+	case http.MethodPut:
+		f.objects[key] = string(body)
+	case http.MethodDelete:
+		delete(f.objects, key)
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
+func (f *fake) stored() ([]string, map[string]string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	objects := map[string]string{}
+	for k, v := range f.objects {
+		objects[k] = v
+	}
+	return append([]string(nil), f.trace...), objects
 }
 
 func newFake(t *testing.T) *fake {
-	f := &fake{rows: map[[2]string]string{}}
+	f := &fake{rows: map[[2]string]string{}, objects: map[string]string{}}
 	f.Server = httptest.NewTLSServer(f)
 	t.Cleanup(f.Close)
 	return f
 }
 
 func (f *fake) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if strings.HasPrefix(r.URL.Path, s3Path) {
+		f.serveS3(w, r)
+		return
+	}
 	q := r.URL.Query()
 	c := call{Method: r.Method, Table: strings.TrimPrefix(r.URL.Path, "/rest/v1/"),
 		APIKey: r.Header.Get("apikey"), Auth: r.Header.Get("Authorization")}
@@ -55,6 +99,7 @@ func (f *fake) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	f.mu.Lock()
 	n, reply := len(f.calls), f.reply
 	f.calls = append(f.calls, c)
+	f.trace = append(f.trace, r.Method+" "+c.Table)
 	f.mu.Unlock()
 	if reply != nil && reply(n, w) {
 		return
@@ -84,7 +129,8 @@ func (f *fake) writes() []call {
 }
 
 func (f *fake) server() Server {
-	return Server{URL: f.URL, Key: "ключ-сервера", Client: f.Client(), Log: log.New(&f.log, "", 0)}
+	return Server{URL: f.URL, Key: "ключ-сервера", Client: f.Client(), Log: log.New(&f.log, "", 0),
+		Files: storage.New(f.Client(), f.URL, "eu-north-1", "ключ-приложения", "служебный-ключ"), Seed: seed}
 }
 
 func (f *fake) snapshot() ([]call, map[[2]string]string) {

@@ -47,6 +47,7 @@ func TestSandboxWorker(t *testing.T) {
 	t.Cleanup(func() { workerClient = old })
 	t.Setenv(supabaseURL, srv.URL)
 	t.Setenv(supabaseKey, "ключ")
+	t.Setenv("SUPABASE_REGION", "eu-north-1")
 	t.Setenv("SUPABASE_SERVICE_ROLE_KEY", "")
 	_, err := runWorker(t.Context(), q.Server, state, q.Seed)
 	assert.EqualError(t, err, "не заданы SUPABASE_SERVICE_ROLE_KEY", "обработчик запущен без ключа администратора")

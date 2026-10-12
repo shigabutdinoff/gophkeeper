@@ -10,7 +10,7 @@ import (
 // Edit собирает изменение, которое меняет поля fields и пометку записи id
 // у владельца owner. Ключ к данным data используется так же, как в Put.
 func Edit(data, owner, id string, fields map[string]string, note string) (*nats.Msg, error) {
-	return sealed("edit", data, owner, id, fields, note)
+	return sealed("edit", data, owner, id, fields, note, "")
 }
 
 // Delete собирает изменение, которое удаляет запись id у владельца owner.
@@ -18,7 +18,7 @@ func Delete(owner, id string) (*nats.Msg, error) {
 	return build(owner, Change{Op: "delete", Record: id})
 }
 
-func sealed(op, data, owner, id string, fields map[string]string, note string) (*nats.Msg, error) {
+func sealed(op, data, owner, id string, fields map[string]string, note, digest string) (*nats.Msg, error) {
 	if !text(note, fields) {
 		return nil, ErrNotText
 	}
@@ -30,7 +30,7 @@ func sealed(op, data, owner, id string, fields map[string]string, note string) (
 	if err != nil {
 		return nil, err
 	}
-	return build(owner, Change{Op: op, Record: id, Note: note, Secret: secret})
+	return build(owner, Change{Op: op, Record: id, Note: note, Secret: secret, Digest: digest})
 }
 
 func build(owner string, c Change) (*nats.Msg, error) {

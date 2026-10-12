@@ -8,7 +8,7 @@
 ---
 
 [TestSandboxSettings/пустое_окружение - 1]
-не заданы SUPABASE_URL, SUPABASE_ANON_KEY
+не заданы SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_REGION
 ---
 
 [TestSandboxSettings/адрес_без_HTTPS - 1]
@@ -19,8 +19,13 @@
 # gophkeeper-sandbox: файл записан командой sandbox, повторный запуск его заменяет
 server: https://project.supabase.co
 app_key: ЗАГЛУШКА КЛЮЧА
+region: eu-north-1
 queue: tls://127.0.0.1:<port>
 queue_ca: |
     <ca>
 
+---
+
+[TestSandboxSettings/нет_региона - 1]
+не заданы SUPABASE_REGION
 ---

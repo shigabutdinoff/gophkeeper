@@ -8,11 +8,13 @@ import (
 	"uuid"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/nats-io/nats.go"
 )
 
 var valid = validator.New()
 
-var reasons = map[string]string{"Op": "неизвестная операция", "Secret": "пустой секрет", "Note": "пометка содержит символ U+0000"}
+var reasons = map[string]string{"Op": "неизвестная операция", "Secret": "пустой секрет", "Note": "пометка содержит символ U+0000",
+	"Digest": "сумма файла не на месте или неверного вида"}
 
 // Parse разбирает изменение data из темы subject и ставит владельца темы в
 // Owner. Идентификаторы возвращаются в каноническом виде. Тему без владельца
@@ -28,6 +30,7 @@ func Parse(subject string, data []byte) (Change, error) {
 		return Change{}, fmt.Errorf("%w: тело не JSON", ErrForged)
 	}
 	id, err := uuid.Parse(c.Record)
+	_, sum := nats.DecodeObjectDigest(c.Digest)
 	var bad validator.ValidationErrors
 	switch {
 	case len(data) > maxChange:
@@ -36,6 +39,8 @@ func Parse(subject string, data []byte) (Change, error) {
 		return Change{}, fmt.Errorf("%w: запись не UUID", ErrForged)
 	case errors.As(valid.Struct(c), &bad):
 		return Change{}, fmt.Errorf("%w: %s", ErrForged, reasons[bad[0].Field()])
+	case c.Digest != "" && sum != nil:
+		return Change{}, fmt.Errorf("%w: %s", ErrForged, reasons["Digest"])
 	}
 	c.Owner, c.Record = owner.String(), id.String()
 	return c, nil

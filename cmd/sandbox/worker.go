@@ -14,6 +14,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/shigabutdinoff/gophkeeper/internal/access"
+	"github.com/shigabutdinoff/gophkeeper/internal/storage"
 	"github.com/shigabutdinoff/gophkeeper/internal/worker"
 )
 
@@ -42,8 +43,8 @@ func runWorker(ctx context.Context, s *server.Server, state, seed string) (*errg
 	g.Go(func() error {
 		defer nc.Close()
 		defer stop()
-		return worker.Run(ctx, js, worker.Server{URL: string(c.Supabase.URL), Key: c.ServiceKey, Client: workerClient,
-			Log: log.New(os.Stderr, "", log.LstdFlags)})
+		return worker.Run(ctx, js, worker.Server{URL: string(c.Supabase.URL), Key: c.ServiceKey, Client: workerClient, Log: log.New(os.Stderr, "", log.LstdFlags),
+			Files: storage.New(workerClient, string(c.Supabase.URL), c.Supabase.Region, c.Supabase.Key, c.ServiceKey), Seed: seed})
 	})
 	return &g, nil
 }

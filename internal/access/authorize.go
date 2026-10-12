@@ -15,7 +15,7 @@ import (
 	"github.com/shigabutdinoff/gophkeeper/internal/record"
 )
 
-func authorizer(issuer nkeys.KeyPair, account, iss string, keys jwt.Keyfunc) callout.AuthorizerFn {
+func authorizer(issuer nkeys.KeyPair, seed, account, iss string, keys jwt.Keyfunc) callout.AuthorizerFn {
 	return func(req *natsjwt.AuthorizationRequest) (string, error) {
 		var claims jwt.RegisteredClaims
 		_, err := jwt.ParseWithClaims(req.ConnectOptions.Token, &claims, keys, jwt.WithValidMethods([]string{"ES256"}),
@@ -32,8 +32,10 @@ func authorizer(issuer nkeys.KeyPair, account, iss string, keys jwt.Keyfunc) cal
 		if account != "" {
 			uc.Audience, uc.IssuerAccount = "", account
 		}
-		uc.Pub.Allow.Add(record.Topic(owner.String()))
-		uc.Sub.Allow.Add(nats.InboxPrefix + owner.String() + ".>")
+		o, b := owner.String(), record.Bucket(seed, owner.String())
+		uc.Pub.Allow.Add(record.Topic(o), record.FilesTopic(o), "$O."+b+".>", "$JS.API.STREAM.INFO.OBJ_"+b,
+			"$JS.API.STREAM.PURGE.OBJ_"+b, "$JS.API.DIRECT.GET.OBJ_"+b+".>")
+		uc.Sub.Allow.Add(nats.InboxPrefix + o + ".>")
 		uc.Expires = claims.ExpiresAt.Unix()
 		return uc.Encode(issuer)
 	}

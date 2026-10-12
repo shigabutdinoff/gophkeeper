@@ -28,6 +28,7 @@ cmp stdout worker.txt
 
 Флаги:
       --access-seed ключ          ключ выдачи доступа к очереди, если не задана GOPHKEEPER_ACCESS_SEED, важнее файла настроек
+      --app-key ключ              ключ приложения на сервере, если не задана GOPHKEEPER_APP_KEY, важнее файла настроек
   -c, --config файл               файл настроек YAML или JSON, если не задана CONFIG
       --queue адрес              адрес очереди изменений, если не задана GOPHKEEPER_QUEUE, важнее файла настроек
       --queue-account ключ        ключ учётной записи очереди, если не задана GOPHKEEPER_QUEUE_ACCOUNT, важнее файла настроек
@@ -35,6 +36,7 @@ cmp stdout worker.txt
       --queue-creds-file файл     файл доступа к очереди, если не задана GOPHKEEPER_QUEUE_CREDS_FILE, важнее файла настроек
       --queue-password пароль   пароль пользователя очереди, если не задана GOPHKEEPER_QUEUE_PASSWORD, важнее файла настроек
       --queue-user имя             имя пользователя очереди, если не задана GOPHKEEPER_QUEUE_USER, важнее файла настроек
+      --region регион           регион хранилища файлов сервера, если не задана GOPHKEEPER_REGION, важнее файла настроек
       --server адрес             адрес сервера, если не задана GOPHKEEPER_SERVER, важнее файла настроек
       --server-key ключ           ключ доступа к серверу, если не задана GOPHKEEPER_SERVER_KEY, важнее файла настроек
 

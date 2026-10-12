@@ -13,9 +13,9 @@ import (
 	callout "github.com/synadia-io/callout.go"
 )
 
-// Serve запускает на соединении nc службу доступа к очереди и возвращает её
-// остановку. Токены сервера server проверяются по его ключам, ответы
-// подписывает seed. Непустой account включает режим оператора очереди.
+// Serve запускает на соединении nc службу доступа к очереди и корзин файлов
+// и возвращает её остановку. Токены сервера server проверяются по его ключам,
+// ответы подписывает seed. Непустой account включает режим оператора очереди.
 func Serve(ctx context.Context, nc *nats.Conn, seed, account, server string,
 	client *http.Client, log natsserver.Logger) (func() error, error) {
 	issuer, err := nkeys.FromSeed([]byte(seed))
@@ -30,7 +30,7 @@ func Serve(ctx context.Context, nc *nats.Conn, seed, account, server string,
 	if err != nil {
 		return nil, fmt.Errorf("ключи сервера: %w", err)
 	}
-	opts := []callout.Option{callout.Authorizer(authorizer(issuer, account, base, keys.Keyfunc)),
+	opts := []callout.Option{callout.Authorizer(authorizer(issuer, seed, account, base, keys.Keyfunc)),
 		callout.ResponseSignerKey(issuer), callout.Logger(log)}
 	if account != "" {
 		opts = append(opts, callout.ResponseSignerIssuer(account))
@@ -39,5 +39,5 @@ func Serve(ctx context.Context, nc *nats.Conn, seed, account, server string,
 	if err != nil {
 		return nil, fmt.Errorf("служба доступа к очереди: %w", err)
 	}
-	return svc.Stop, nil
+	return buckets(ctx, nc, seed, log, svc.Stop)
 }

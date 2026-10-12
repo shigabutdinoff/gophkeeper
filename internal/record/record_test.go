@@ -159,3 +159,45 @@ func TestSealRejectsBrokenText(t *testing.T) {
 	_, _, err = Put(data, anna, map[string]string{"text": "строка\nвторая 🤔"}, "пометка")
 	assert.NoError(t, err, "текст в UTF-8 отклонён")
 }
+
+func TestSealFile(t *testing.T) {
+	data := newKey(t)
+	random := make([]byte, 1<<20)
+	rand.Read(random)
+	for name, plain := range map[string][]byte{"случайные байты": random, "пустой файл": {}} {
+		sealed, err := SealFile(data, id, plain)
+		require.NoError(t, err, "файл не зашифрован: %s", name)
+		assert.NotContains(t, string(sealed), string(random[:16]), "файл ушёл открыто: %s", name)
+		got, err := OpenFile(data, id, sealed)
+		require.NoError(t, err, "файл не расшифрован: %s", name)
+		assert.Equal(t, plain, append([]byte{}, got...), "файл изменился: %s", name)
+	}
+	_, err := SealFile("!", id, random)
+	assert.Error(t, err, "файл зашифрован неверным ключом")
+}
+
+func TestOpenFileRejects(t *testing.T) {
+	data, other := newKey(t), newKey(t)
+	sealed, err := SealFile(data, id, []byte("ключ SSH"))
+	require.NoError(t, err, "файл не зашифрован")
+	_, _, c := put(t, data)
+	secret, err := seal(data, id, []byte(`{"login":"anna"}`))
+	require.NoError(t, err, "секрет не собран")
+	_, err = Open(data, id, sealed)
+	assert.Error(t, err, "файл открыт как секрет записи")
+	cases := map[string]struct {
+		data, id string
+		sealed   []byte
+	}{
+		"секрет записи":   {data, id, secret},
+		"чужой ключ":      {other, id, sealed},
+		"чужая запись":    {data, c.Record, sealed},
+		"обрезанный файл": {data, id, sealed[:len(sealed)-1]},
+		"короче nonce":    {data, id, sealed[:5]},
+		"неверный ключ":   {"!", id, sealed},
+	}
+	for name, tc := range cases {
+		_, err := OpenFile(tc.data, tc.id, tc.sealed)
+		assert.Error(t, err, "файл открыт: %s", name)
+	}
+}

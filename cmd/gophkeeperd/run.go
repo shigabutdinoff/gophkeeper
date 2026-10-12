@@ -10,6 +10,7 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 
 	"github.com/shigabutdinoff/gophkeeper/internal/access"
+	"github.com/shigabutdinoff/gophkeeper/internal/storage"
 	"github.com/shigabutdinoff/gophkeeper/internal/worker"
 )
 
@@ -24,5 +25,6 @@ func run(ctx context.Context, nc *nats.Conn, s settings, errOut io.Writer) error
 	}
 	defer stop()
 	return worker.Run(ctx, js, worker.Server{URL: s.Server, Key: s.ServerKey, Client: httpClient,
-		Log: log.New(errOut, "", log.LstdFlags)})
+		Log: log.New(errOut, "", log.LstdFlags), Seed: s.AccessSeed,
+		Files: storage.New(httpClient, s.Server, s.Region, s.AppKey, s.ServerKey)})
 }

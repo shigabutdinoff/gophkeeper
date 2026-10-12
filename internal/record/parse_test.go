@@ -9,7 +9,25 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const id = "0199b5e4-7c3a-7d21-9f4e-2a6c8b1d3e57"
+const (
+	id     = "0199b5e4-7c3a-7d21-9f4e-2a6c8b1d3e57"
+	digest = "SHA-256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU="
+)
+
+func TestParsePutFile(t *testing.T) {
+	data := newKey(t)
+	fields := map[string]string{"type": "file", "name": "id_ed25519", "size": "411"}
+	msg, err := PutFile(data, anna, id, fields, "ключ SSH", nil)
+	require.NoError(t, err, "запись о файле не собрана")
+	got, err := Parse(msg.Subject, msg.Data)
+	require.NoError(t, err, "запись о файле не разобрана")
+	assert.Equal(t, Change{Op: "put", Record: id, Note: "ключ SSH", Secret: got.Secret, Digest: digest, Owner: anna}, got, "разобрана не та запись о файле")
+	assert.NotContains(t, string(msg.Data), "id_ed25519", "имя файла ушло открыто")
+	opened, err := Open(data, id, got.Secret)
+	require.NoError(t, err, "секрет записи о файле не открыт")
+	assert.Equal(t, fields, opened, "не те имя и размер файла")
+	assert.NotEmpty(t, msg.Header.Get("Nats-Msg-Id"), "нет идентификатора сообщения")
+}
 
 func TestParsePut(t *testing.T) {
 	msg, id, c := put(t, newKey(t))
@@ -41,6 +59,11 @@ func TestParseForged(t *testing.T) {
 		{"empty secret", Topic(anna), `{"op":"put","record":"` + id + `"}`},
 		{"empty edit secret", Topic(anna), `{"op":"edit","record":"` + id + `"}`},
 		{"nul note", Topic(anna), `{"op":"put","record":"` + id + `","note":"a\u0000","secret":"czNjcmV0"}`},
+		{"edit digest", Topic(anna), `{"op":"edit","record":"` + id + `","secret":"czNjcmV0","digest":"` + digest + `"}`},
+		{"delete digest", Topic(anna), `{"op":"delete","record":"` + id + `","digest":"` + digest + `"}`},
+		{"short digest", Topic(anna), `{"op":"put","record":"` + id + `","secret":"czNjcmV0","digest":"SHA-256=czNjcmV0"}`},
+		{"other digest", Topic(anna), `{"op":"put","record":"` + id + `","secret":"czNjcmV0","digest":"` + strings.Replace(digest, "SHA-256", "SHA-512", 1) + `"}`},
+		{"digest not base64", Topic(anna), `{"op":"put","record":"` + id + `","secret":"czNjcmV0","digest":"SHA-256=` + strings.Repeat("!", 44) + `"}`},
 	}
 	var reasons []string
 	for _, c := range cases {

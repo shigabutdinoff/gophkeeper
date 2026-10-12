@@ -48,16 +48,18 @@ func TestSandboxSettings(t *testing.T) {
 	state := t.TempDir()
 	require.NoError(t, sandboxSecrets(state), "секреты песочницы не созданы")
 	for _, c := range []struct {
-		name, url, key, state string
-		missing               bool
+		name, url, key, region, state string
+		missing                       bool
 	}{
-		{"пустое окружение", "", "", state, false},
-		{"адрес без HTTPS", "http://project.supabase.co", "ЗАГЛУШКА КЛЮЧА", state, false},
-		{"нет CA", "https://project.supabase.co", "ЗАГЛУШКА КЛЮЧА", t.TempDir(), true},
+		{"пустое окружение", "", "", "", state, false},
+		{"нет региона", "https://project.supabase.co", "ЗАГЛУШКА КЛЮЧА", "", state, false},
+		{"адрес без HTTPS", "http://project.supabase.co", "ЗАГЛУШКА КЛЮЧА", "eu-north-1", state, false},
+		{"нет CA", "https://project.supabase.co", "ЗАГЛУШКА КЛЮЧА", "eu-north-1", t.TempDir(), true},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			t.Setenv(supabaseURL, c.url)
 			t.Setenv(supabaseKey, c.key)
+			t.Setenv("SUPABASE_REGION", c.region)
 			_, serr := sandboxSettings(c.state)
 			require.Error(t, serr, "настройки собраны")
 			if c.missing {
@@ -70,6 +72,7 @@ func TestSandboxSettings(t *testing.T) {
 	t.Run("готово", func(t *testing.T) {
 		t.Setenv(supabaseURL, "https://project.supabase.co")
 		t.Setenv(supabaseKey, "ЗАГЛУШКА КЛЮЧА")
+		t.Setenv("SUPABASE_REGION", "eu-north-1")
 		data, serr := sandboxSettings(state)
 		require.NoError(t, serr, "настройки песочницы не собраны")
 		ca := regexp.MustCompile(`(?s)-----BEGIN CERTIFICATE-----.*-----END CERTIFICATE-----`)
