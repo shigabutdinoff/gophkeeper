@@ -1,12 +1,15 @@
 package cli
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 	"testing"
 	"time"
 
+	"charm.land/huh/v2"
 	"github.com/nats-io/nats.go/jetstream"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -75,6 +78,31 @@ func TestEdit(t *testing.T) {
 	c := lastChange(t, stream)
 	assert.Equal(t, []string{"edit", rec.ID}, []string{c.Op, c.Record}, "в очереди не та правка")
 	assert.Equal(t, []string{"anna", "n3w-s3cret", "сайт example.com"}, opened(t, c), "логин или пометка не прежние")
+}
+
+func TestEditFile(t *testing.T) {
+	file := map[string]string{"type": "file", "name": "id_ed25519", "size": "411"}
+	rec := sealedAs(t, file, "ключ SSH для рабочего сервера")
+	srv, stream := withQueue(t, replyJSON(t, []stored{rec}))
+	before := srv.requests.Load()
+	_, _, err := executeIn(keyboard(t, true, ""), "edit", rec.ID, "--file", "./new")
+	require.EqualError(t, err, "чтобы заменить файл, удалите запись и добавьте файл заново", "замена содержимого принята")
+	assert.Equal(t, before, srv.requests.Load(), "сервер опрошен при замене содержимого")
+	assert.Zero(t, queued(t, stream), "замена содержимого ушла в очередь")
+
+	keyboard(t, true, "")
+	setVar(t, &runForm, func(*cobra.Command, *huh.Form) error { return errors.New("поля файла спрошены") })
+	out, _, err := executeIn(input(t, ""), "edit", rec.ID, "--note", "ключ SSH, старый сервер")
+	require.NoError(t, err, "пометка файла не изменена")
+	assert.Equal(t, "Изменение принято, запись "+rec.ID+".\n", out, "не тот ответ")
+	c := lastChange(t, stream)
+	assert.Equal(t, []string{"edit", rec.ID, "ключ SSH, старый сервер", ""}, []string{c.Op, c.Record, c.Note, c.Digest}, "в очереди не та правка")
+	assert.Equal(t, file, secretOf(t, c), "имя или размер файла не прежние")
+
+	_, _, err = executeIn(keyboard(t, true, ""), "delete", rec.ID)
+	require.NoError(t, err, "удаление файла не принято")
+	c = lastChange(t, stream)
+	assert.Equal(t, []string{"delete", rec.ID}, []string{c.Op, c.Record}, "в очереди не удаление файла")
 }
 
 func TestEditFlags(t *testing.T) {

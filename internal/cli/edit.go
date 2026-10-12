@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"errors"
+
 	"github.com/spf13/cobra"
 
 	"github.com/shigabutdinoff/gophkeeper/internal/account"
@@ -12,15 +14,18 @@ func editCmd() *cobra.Command {
 		Use:   "edit <идентификатор>",
 		Short: "Изменить запись",
 		Long: "Меняет пароль записи, логин и пометку остаются прежними, если не заданы флагами. Пароль вводится только с клавиатуры.\n" +
-			"У текста и карты пустой ввод поля оставляет прежнее значение, тип записи не меняется.\n" +
+			"У текста и карты пустой ввод поля оставляет прежнее значение, у файла меняется только пометка.\n" +
 			"Прежние значения читаются с сервера, без него изменение не принимается.",
 		Args: oneArg,
 	}
 	login := cmd.Flags().String("login", "", "новый `логин` записи")
 	note := cmd.Flags().String("note", "", "новый `текст` открытой пометки, без секретов")
+	cmd.Flags().String("file", "", "`путь` нового файла, замена файла не поддерживается")
 	cmd.RunE = func(c *cobra.Command, args []string) error {
+		if c.Flags().Changed("file") {
+			return errors.New("чтобы заменить файл, удалите запись и добавьте файл заново")
+		}
 		o, e, err := lookup(c, args[0], false)
-		defer o.stop()
 		if err != nil {
 			return account.Reason(err)
 		}
@@ -34,10 +39,7 @@ func editCmd() *cobra.Command {
 			return err
 		}
 		msg, err := record.Edit(o.keys.Data, o.keys.User, e.ID, fields, text)
-		if err != nil {
-			return err
-		}
-		return deliver(c, o.s, o.keys, msg, e.ID)
+		return deliver(c, o.s, o.keys, e.ID, msg, err)
 	}
 	return cmd
 }

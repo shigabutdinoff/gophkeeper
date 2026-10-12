@@ -9,7 +9,7 @@ cmp stderr loggedout.txt
 
 ! exec gophkeeper add --type bogus
 ! stdout .
-stderr '^Ошибка: неизвестный тип записи "bogus", допустимы text и card$'
+stderr '^Ошибка: неизвестный тип записи "bogus", допустимы text, card и file$'
 
 -- config.yaml --
 server: https://example.invalid

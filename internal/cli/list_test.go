@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"slices"
 	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
+	"uuid"
 
 	"charm.land/huh/v2"
 	"github.com/gkampitakis/go-snaps/snaps"
@@ -161,15 +163,32 @@ func TestListBusy(t *testing.T) {
 
 func TestListSilent(t *testing.T) {
 	release := make(chan struct{})
-	srv := serveRecords(t, func(http.ResponseWriter, *http.Request) { <-release })
+	serveRecords(t, func(http.ResponseWriter, *http.Request) { <-release })
 	t.Cleanup(func() { close(release) })
 	login(t)
-	srv.Client().Timeout = time.Minute
-	setVar(t, &budget, 100*time.Millisecond)
 	start := time.Now()
 	_, _, err := executeIn(keyboard(t, true, ""), "list")
 	assert.Equal(t, account.ErrNoAnswer, err, "нет «сервер не отвечает»")
 	assert.Less(t, time.Since(start), 2*time.Second, "команда ждала дольше срока")
+}
+
+func TestListSlowPages(t *testing.T) {
+	recs := make([]stored, 201)
+	for i := range recs {
+		recs[i] = stored{ID: uuid.NewV7().String(), Secret: []byte("не читается")}
+	}
+	var pages atomic.Int32
+	serveRecords(t, func(w http.ResponseWriter, r *http.Request) {
+		from := slices.IndexFunc(recs, func(s stored) bool { return "gt."+s.ID == r.URL.Query().Get("id") }) + 1
+		pages.Add(1)
+		time.Sleep(httpClient.Timeout * 3 / 4)
+		assert.NoError(t, json.NewEncoder(w).Encode(recs[from:min(from+100, len(recs))]), "страница не записана")
+	})
+	login(t)
+	out, _, err := executeIn(keyboard(t, true, ""), "list")
+	require.NoError(t, err, "длинный список оборван сроком одной команды")
+	assert.EqualValues(t, 3, pages.Load(), "список прочитан не тремя страницами")
+	assert.Equal(t, 201, strings.Count(out, "не читается"), "список выведен не целиком")
 }
 
 func TestListHidesServerDetails(t *testing.T) {
@@ -190,11 +209,10 @@ func TestListSlowPassword(t *testing.T) {
 	keyring.MockInitWithError(errors.New("нет хранилища"))
 	t.Cleanup(keyring.MockInit)
 	login(t)
-	setVar(t, &budget, 3*time.Second)
 	in := keyboard(t, true, typedPassword)
 	typePassword := runForm
 	setVar(t, &runForm, func(c *cobra.Command, f *huh.Form) error {
-		time.Sleep(3200 * time.Millisecond)
+		time.Sleep(2 * httpClient.Timeout)
 		return typePassword(c, f)
 	})
 	out, _, err := executeIn(in, "list")

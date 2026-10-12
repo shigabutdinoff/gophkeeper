@@ -13,19 +13,16 @@ import (
 
 const deadline = 10 * time.Second
 
-// Send отправляет изменение msg в очередь из настроек s с параметрами extra
-// и ждёт подтверждения не дольше 10 секунд. Повтор того же msg не создаёт
-// второго изменения. Отказ в доступе даёт ErrDenied, иначе ErrUnavailable.
-func Send(ctx context.Context, s config.Settings, msg *nats.Msg, extra ...nats.Option) error {
+func session(ctx context.Context, s config.Settings, limit time.Duration, extra []nats.Option, do func(context.Context, *nats.Conn) error) error {
 	if err := Check(s); err != nil {
 		return err
 	}
-	ctx, cancel := context.WithTimeout(ctx, deadline)
+	ctx, cancel := context.WithTimeout(ctx, limit)
 	defer cancel()
 	nc, err := Connect(s, extra...)
 	if err == nil {
 		defer nc.Close()
-		err = publish(ctx, nc, msg)
+		err = do(ctx, nc)
 		if last := nc.LastError(); err != nil && (errors.Is(last, nats.ErrAuthorization) || errors.Is(last, nats.ErrAuthExpired)) {
 			return fmt.Errorf("%w: %w", ErrDenied, last)
 		}

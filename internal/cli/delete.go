@@ -16,15 +16,11 @@ func deleteCmd() *cobra.Command {
 	}
 	cmd.RunE = func(c *cobra.Command, args []string) error {
 		o, e, err := lookup(c, args[0], true)
-		defer o.stop()
 		if err != nil {
 			return account.Reason(err)
 		}
 		msg, err := record.Delete(o.keys.User, e.ID)
-		if err != nil {
-			return err
-		}
-		return deliver(c, o.s, o.keys, msg, e.ID)
+		return deliver(c, o.s, o.keys, e.ID, msg, err)
 	}
 	return cmd
 }

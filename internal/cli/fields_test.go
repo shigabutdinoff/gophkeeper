@@ -116,7 +116,7 @@ func TestFieldsCardNotTerminal(t *testing.T) {
 
 func TestKindUnknown(t *testing.T) {
 	_, err := kindOf("bogus")
-	assert.EqualError(t, err, `неизвестный тип записи "bogus", допустимы text и card`, "неизвестный тип принят")
+	assert.EqualError(t, err, `неизвестный тип записи "bogus", допустимы text, card и file`, "неизвестный тип принят")
 }
 
 func TestFormQuit(t *testing.T) {

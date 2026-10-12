@@ -11,7 +11,7 @@ import (
 )
 
 func showList(c *cobra.Command, o online) error {
-	list, err := account.List(o.ctx, httpClient, o.s, o.keys.Access)
+	list, err := account.List(c.Context(), httpClient, o.s, o.keys.Access)
 	if err != nil {
 		return err
 	}
@@ -21,9 +21,12 @@ func showList(c *cobra.Command, o online) error {
 	t := table.New().Headers("Тип", "Пометка", "Идентификатор").
 		StyleFunc(func(int, int) lipgloss.Style { return lipgloss.NewStyle().Padding(0, 1) })
 	for _, e := range list {
-		k, _, err := unseal(o, e)
+		k, f, err := unseal(o, e)
 		if err != nil {
 			k.title = "не читается"
+		}
+		if k.name == "file" {
+			k.title += " " + f["name"] + ", " + sized(f)
 		}
 		t.Row(k.title, e.Note, e.ID)
 	}

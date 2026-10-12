@@ -14,27 +14,34 @@ import (
 
 func add(c *cobra.Command, s config.Settings, keys account.Secrets, k kind, login, note string) error {
 	fields, err := ask(c, k, login, note, nil)
-	if err != nil {
+	switch {
+	case err != nil:
 		return err
+	case k.name == "file":
+		return addFile(c, s, keys, note)
 	}
 	msg, id, err := record.Put(keys.Data, keys.User, fields, note)
-	if err != nil {
-		return err
-	}
-	return deliver(c, s, keys, msg, id)
+	return deliver(c, s, keys, id, msg, err)
 }
 
 var errOffline = errors.New("сервер недоступен, изменение не сохранено, попробуйте позже")
 
-func deliver(c *cobra.Command, s config.Settings, keys account.Secrets, msg *nats.Msg, id string) error {
-	if keys.Access == "" {
+func offline(keys account.Secrets, err error) error {
+	if errors.Is(err, queue.ErrDenied) && keys.Down != nil {
 		return errOffline
 	}
-	err := queue.Send(c.Context(), s, msg, nats.Token(keys.Access), nats.CustomInboxPrefix(nats.InboxPrefix+keys.User))
+	return err
+}
+
+func deliver(c *cobra.Command, s config.Settings, keys account.Secrets, id string, msg *nats.Msg, err error) error {
 	switch {
-	case errors.Is(err, queue.ErrDenied) && keys.Down != nil:
-		return errOffline
 	case err != nil:
+		return err
+	case keys.Access == "":
+		return errOffline
+	}
+	err = queue.Send(c.Context(), s, msg, nats.Token(keys.Access), nats.CustomInboxPrefix(nats.InboxPrefix+keys.User))
+	if err = offline(keys, err); err != nil {
 		return err
 	}
 	return report(c, "Изменение принято, запись "+id+".")

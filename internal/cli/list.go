@@ -16,7 +16,6 @@ func listCmd() *cobra.Command {
 	}
 	cmd.RunE = func(c *cobra.Command, args []string) error {
 		o, err := connect(c)
-		defer o.stop()
 		if err == nil {
 			err = o.keys.Down
 		}

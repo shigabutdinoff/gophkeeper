@@ -23,7 +23,7 @@
 ---
 
 [TestAddRefusesBeforeSecrets/bogus_type - 1]
-неизвестный тип записи "bogus", допустимы text и card
+неизвестный тип записи "bogus", допустимы text, card и file
 ---
 
 [TestAddText - 1]

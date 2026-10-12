@@ -13,7 +13,7 @@ import (
 func lookup(c *cobra.Command, id string, unchecked bool) (online, account.Entry, error) {
 	u, err := uuid.Parse(id)
 	if err != nil {
-		return online{stop: func() {}}, account.Entry{}, account.ErrNotFound
+		return online{}, account.Entry{}, account.ErrNotFound
 	}
 	o, err := connect(c)
 	if err == nil {
@@ -24,7 +24,7 @@ func lookup(c *cobra.Command, id string, unchecked bool) (online, account.Entry,
 	}
 	var e account.Entry
 	if err = o.keys.Down; err == nil {
-		e, err = account.Find(o.ctx, httpClient, o.s, o.keys.Access, u.String())
+		e, err = account.Find(c.Context(), httpClient, o.s, o.keys.Access, u.String())
 	}
 	if unchecked && errors.Is(err, account.ErrNoAnswer) {
 		return o, account.Entry{ID: u.String()}, nil

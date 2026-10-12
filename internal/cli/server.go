@@ -16,7 +16,7 @@ import (
 
 const serverEnv = "GOPHKEEPER_SERVER"
 
-var httpClient = &http.Client{Timeout: 10 * time.Second}
+var httpClient = &http.Client{Timeout: 9 * time.Second}
 
 func resolve(flag string) (config.Settings, error) {
 	dir, err := config.Dir()

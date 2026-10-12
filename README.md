@@ -10,20 +10,22 @@
 ## Документация
 
 ```sh
-gophkeeper                         # список команд
-gophkeeper <команда> --help        # справка по команде
-gophkeeper --version               # версия, номер, дата и коммит сборки
-gophkeeper completion <оболочка>   # скрипт автодополнения
-gophkeeper register                # регистрация по email и паролю
-gophkeeper login                   # вход по email и паролю
-gophkeeper logout                  # выход на этом устройстве
-gophkeeper add --login <логин>     # логин и пароль, флаг --note добавляет пометку
-gophkeeper add --type text         # текст из stdin до конца ввода
-gophkeeper add --type card         # номер, срок, имя и код банковской карты
-gophkeeper list                    # тип, пометка и идентификатор каждой записи
-gophkeeper list <идентификатор>    # поля и пометка записи
-gophkeeper edit <идентификатор>    # новый пароль, флаги --login и --note меняют остальное
-gophkeeper delete <идентификатор>  # удаление записи
+gophkeeper                              # список команд
+gophkeeper <команда> --help             # справка по команде
+gophkeeper --version                    # версия, номер, дата и коммит сборки
+gophkeeper completion <оболочка>        # скрипт автодополнения
+gophkeeper register                     # регистрация по email и паролю
+gophkeeper login                        # вход по email и паролю
+gophkeeper logout                       # выход на этом устройстве
+gophkeeper add --login <логин>          # логин и пароль, флаг --note добавляет пометку
+gophkeeper add --type text              # текст из stdin до конца ввода
+gophkeeper add --type card              # номер, срок, имя и код банковской карты
+gophkeeper add --type file              # файл до 50 МБ, выбирается в форме
+gophkeeper list                         # тип, пометка и идентификатор каждой записи
+gophkeeper list <идентификатор>         # поля и пометка записи
+gophkeeper get <идентификатор> <путь>   # файл записи на диск
+gophkeeper edit <идентификатор>         # новый пароль, флаги --login и --note меняют остальное
+gophkeeper delete <идентификатор>       # удаление записи
 ```
 
 ## Установка

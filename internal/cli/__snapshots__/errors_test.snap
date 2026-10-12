@@ -126,3 +126,11 @@
 [TestErrors/gophkeeper_edit_--nosuch - 1]
 неизвестный флаг "--nosuch"
 ---
+
+[TestErrors/gophkeeper_get_nosuch - 1]
+укажите путь, по которому сохранить файл
+---
+
+[TestErrors/gophkeeper_get_--nosuch - 1]
+неизвестный флаг "--nosuch"
+---

@@ -7,6 +7,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var errNoRegion = errors.New("не задан регион сервера: укажите region в файле настроек")
+
 func unknownCommand(name string) error {
 	return fmt.Errorf("неизвестная команда %q", name)
 }
