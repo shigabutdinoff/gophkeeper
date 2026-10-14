@@ -25,7 +25,7 @@ func newRoot(out, errOut io.Writer) *cobra.Command {
 	}
 	root.SetOut(out)
 	root.SetErr(errOut)
-	root.AddCommand(workerCmd())
+	root.AddCommand(workerCmd(), serverCmd())
 	cli.Localize(root)
 	return root
 }

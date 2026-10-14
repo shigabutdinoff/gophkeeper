@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"fmt"
 	"os"
 
@@ -8,17 +9,18 @@ import (
 )
 
 func up(cmd *cobra.Command, _ []string) error {
-	if _, err := parseEnv[serviceConfig](); err != nil {
-		return err
-	}
 	p, err := paths(sandboxName)
 	if err != nil {
+		return err
+	}
+	own, _ := cmd.Flags().GetBool("own")
+	if err = enter(cmd.Context(), p.state, own); err != nil {
 		return err
 	}
 	if err = os.MkdirAll(p.state, 0o700); err != nil {
 		return fmt.Errorf("каталог песочницы: %w", err)
 	}
-	if err = sandboxSecrets(p.state); err != nil {
+	if err = cmp.Or(ownKeys(p.state, own), sandboxSecrets(p.state)); err != nil {
 		return fmt.Errorf("секреты песочницы: %w", err)
 	}
 	want, err := sandboxSettings(p.state)

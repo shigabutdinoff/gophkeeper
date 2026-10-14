@@ -11,7 +11,7 @@ import (
 )
 
 func reset(cmd *cobra.Command, args []string) error {
-	if err := down(cmd, args); err != nil {
+	if err := halt(cmd, "down", "--volumes"); err != nil {
 		return err
 	}
 	p, err := paths(sandboxName)

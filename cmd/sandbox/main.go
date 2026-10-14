@@ -28,11 +28,11 @@ func newRoot(out, errOut io.Writer) *cobra.Command {
 	}
 	root.SetOut(out)
 	root.SetErr(errOut)
+	upCmd := &cobra.Command{Use: "up", Short: "Запустить локальную песочницу в фоне и записать настройки клиента", Args: cli.NoArgs, RunE: up}
+	upCmd.Flags().Bool("own", false, "запустить собственный сервер GophKeeper и Postgres вместо облачного Supabase")
 	root.AddCommand(&cobra.Command{
 		Use: "cloud", Short: "Подключить клиент к облачным Supabase и очереди изменений", Args: cli.NoArgs, RunE: cloud,
-	}, &cobra.Command{
-		Use: "up", Short: "Запустить локальную песочницу в фоне и записать настройки клиента", Args: cli.NoArgs, RunE: up,
-	}, &cobra.Command{
+	}, upCmd, &cobra.Command{
 		Use: "down", Short: "Остановить локальную песочницу, сохранив её данные", Args: cli.NoArgs, RunE: down,
 	}, &cobra.Command{
 		Use: "reset", Short: "Остановить локальную песочницу и удалить её данные и настройки", Args: cli.NoArgs, RunE: reset,

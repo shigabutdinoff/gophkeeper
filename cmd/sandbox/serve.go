@@ -2,12 +2,11 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"os/signal"
 	"syscall"
 
-	"github.com/nats-io/nats-server/v2/server"
 	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
 )
 
 func serve(cmd *cobra.Command, _ []string) error {
@@ -15,16 +14,14 @@ func serve(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	opts, seed, err := serverOptions(p.state, sandboxPort)
+	own, err := ownServer(p.state)
 	if err != nil {
 		return err
 	}
-	s, err := server.NewServer(opts)
+	s, seed, err := launchQueue(p.state)
 	if err != nil {
-		return fmt.Errorf("создание очереди песочницы: %w", err)
+		return err
 	}
-	s.ConfigureLogger()
-	s.Start()
 	defer s.Shutdown()
 	if !s.ReadyForConnections(queueTimeout) {
 		return errors.New("очередь песочницы не запустилась")
@@ -36,6 +33,8 @@ func serve(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	defer closeStop()
+	var served errgroup.Group
+	served.Go(func() error { return own(ctx) })
 	done, err := runWorker(ctx, s, p.state, seed)
 	if err != nil {
 		return err
@@ -44,5 +43,5 @@ func serve(cmd *cobra.Command, _ []string) error {
 		s.Errorf("обработчик очереди изменений: %v", err)
 		<-ctx.Done()
 	}
-	return nil
+	return served.Wait()
 }

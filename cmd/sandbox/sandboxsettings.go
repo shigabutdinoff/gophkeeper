@@ -23,7 +23,7 @@ var (
 )
 
 func sandboxSettings(state string) ([]byte, error) {
-	s, err := parseEnv[supabaseConfig]()
+	c, cert, err := backend(state)
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +31,8 @@ func sandboxSettings(state string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("CA песочницы: %w", err)
 	}
-	data, err := yaml.Marshal(config.Settings{Server: string(s.URL), AppKey: s.Key, Region: s.Region, Queue: sandboxQueue, QueueCA: string(ca)})
+	data, err := yaml.Marshal(config.Settings{Server: string(c.Supabase.URL), AppKey: c.Supabase.Key, Region: c.Supabase.Region,
+		Queue: sandboxQueue, QueueCA: string(ca), ServerCert: cert})
 	if err != nil {
 		return nil, fmt.Errorf("разметка настроек песочницы: %w", err)
 	}

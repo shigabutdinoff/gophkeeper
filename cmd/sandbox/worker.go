@@ -1,11 +1,11 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 
 	"github.com/nats-io/nats-server/v2/server"
@@ -14,15 +14,14 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/shigabutdinoff/gophkeeper/internal/access"
+	"github.com/shigabutdinoff/gophkeeper/internal/account"
 	"github.com/shigabutdinoff/gophkeeper/internal/storage"
 	"github.com/shigabutdinoff/gophkeeper/internal/worker"
 )
 
-var workerClient = http.DefaultClient
-
 func runWorker(ctx context.Context, s *server.Server, state, seed string) (*errgroup.Group, error) {
-	c, err := parseEnv[serviceConfig]()
-	if err != nil {
+	c, cert, err := backend(state)
+	if err = cmp.Or(err, account.Trust(workerClient, cert)); err != nil {
 		return nil, err
 	}
 	admin, err := sandboxUser(state, adminUser)

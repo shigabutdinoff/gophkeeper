@@ -1,0 +1,16 @@
+exec sandbox up
+stdout 'песочница запущена'
+cp $CONFIG/gophkeeper/config.yaml config.before
+
+! exec sandbox up --own
+! stdout .
+cmp stderr mode.txt
+cmp $CONFIG/gophkeeper/config.yaml config.before
+! exists $CONFIG/gophkeeper/sandbox/service_key
+! exists docker.log
+
+exec sandbox reset
+stdout 'песочница сброшена'
+
+-- mode.txt --
+Ошибка: песочница создана в другом режиме, сначала выполните go run ./cmd/sandbox reset

@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strconv"
 	"sync"
@@ -34,13 +35,22 @@ func TestScripts(t *testing.T) {
 			home := filepath.Join(env.WorkDir, "home")
 			config := filepath.Join(home, ".config")
 			env.Vars = append(env.Vars, "HOME="+home, "USERPROFILE="+home, "XDG_CONFIG_HOME="+config, "CONFIG="+config,
-				"GORACE=atexit_sleep_ms=0", testPortEnv+"="+strconv.Itoa(sandboxPort), "SUPABASE_URL=https://127.0.0.1:9", "SUPABASE_ANON_KEY=ЗАГЛУШКА КЛЮЧА", "SUPABASE_SERVICE_ROLE_KEY=ЗАГЛУШКА КЛЮЧА АДМИНИСТРАТОРА", "SUPABASE_REGION=eu-north-1")
+				"GORACE=atexit_sleep_ms=0", testPortEnv+"="+strconv.Itoa(sandboxPort), testOwnPortEnv+"="+os.Getenv(testOwnPortEnv),
+				testOwnDBEnv+"="+ownDatabase,
+				"DOCKER_JOURNAL="+filepath.Join(env.WorkDir, "docker.log"), "SUPABASE_URL=https://127.0.0.1:9", "SUPABASE_ANON_KEY=ЗАГЛУШКА КЛЮЧА", "SUPABASE_SERVICE_ROLE_KEY=ЗАГЛУШКА КЛЮЧА АДМИНИСТРАТОРА", "SUPABASE_REGION=eu-north-1")
 			env.Defer(func() {
 				stop(context.Background(), filepath.Join(config, "gophkeeper", sandboxName))
 			})
 			return nil
 		},
-		Cmds: map[string]func(*testscript.TestScript, bool, []string){"publish": publish, "stranger": stranger},
+		Cmds: map[string]func(*testscript.TestScript, bool, []string){"publish": publish, "stranger": stranger,
+			"status": status, "settings": settings, "occupy": occupy, "signin": signin},
+		Condition: func(cond string) (bool, error) {
+			if cond != "db" {
+				return false, fmt.Errorf("незнакомое условие %q", cond)
+			}
+			return os.Getenv(testDBEnv) != "", nil
+		},
 	})
 }
 

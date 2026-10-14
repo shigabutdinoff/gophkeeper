@@ -32,3 +32,17 @@ func serverOptions(state string, port int) (*server.Options, string, error) {
 		AuthCallout: &server.AuthCallout{Issuer: public, Account: server.DEFAULT_GLOBAL_ACCOUNT, AuthUsers: []string{adminUser}},
 	}, seed, nil
 }
+
+func launchQueue(state string) (*server.Server, string, error) {
+	opts, seed, err := serverOptions(state, sandboxPort)
+	if err != nil {
+		return nil, "", err
+	}
+	s, err := server.NewServer(opts)
+	if err != nil {
+		return nil, "", fmt.Errorf("создание очереди песочницы: %w", err)
+	}
+	s.ConfigureLogger()
+	s.Start()
+	return s, seed, nil
+}

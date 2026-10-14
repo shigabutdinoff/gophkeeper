@@ -1,0 +1,22 @@
+env SUPABASE_URL=
+env DOCKER_FAIL='up --detach'
+! exec sandbox up --own
+! stdout .
+cmp stderr fail.txt
+cmp docker.log fail.log
+! exists $CONFIG/gophkeeper/sandbox
+
+env SUPABASE_URL=https://127.0.0.1:9
+exec sandbox up
+stdout 'песочница запущена'
+cmp docker.log fail.log
+exec sandbox reset
+stdout 'песочница сброшена'
+cmp docker.log fail.log
+
+-- fail.txt --
+Ошибка: docker compose не выполнен, проверьте, что Docker запущен и команда вызвана из корня репозитория: exit status 1
+Cannot connect to the Docker daemon at unix:///fake.sock. Is the docker daemon running?
+-- fail.log --
+compose -p gophkeeper-sandbox -f compose.yaml up --detach --wait, каталог песочницы: нет
+compose -p gophkeeper-sandbox -f compose.yaml down, каталог песочницы: нет

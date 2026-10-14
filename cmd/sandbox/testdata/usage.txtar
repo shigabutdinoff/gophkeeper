@@ -22,6 +22,10 @@ cmp stderr unknown.txt
 ! stdout .
 cmp stderr flag.txt
 
+exec sandbox up --help
+! stderr .
+cmp stdout up.txt
+
 -- help.txt --
 Настройки клиента GophKeeper для проверки
 
@@ -54,3 +58,14 @@ cmp stderr flag.txt
 Ошибка: неизвестная команда "nosuch"
 -- flag.txt --
 Ошибка: неизвестный флаг "--nosuch"
+-- up.txt --
+Запустить локальную песочницу в фоне и записать настройки клиента
+
+Использование:
+  go run ./cmd/sandbox up [флаги]
+
+Флаги:
+      --own   запустить собственный сервер GophKeeper и Postgres вместо облачного Supabase
+
+Общие флаги:
+  -h, --help   показать справку по команде

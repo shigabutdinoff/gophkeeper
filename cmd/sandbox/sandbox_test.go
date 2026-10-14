@@ -47,6 +47,7 @@ func TestSandboxSecrets(t *testing.T) {
 func TestSandboxSettings(t *testing.T) {
 	state := t.TempDir()
 	require.NoError(t, sandboxSecrets(state), "секреты песочницы не созданы")
+	t.Setenv("SUPABASE_SERVICE_ROLE_KEY", "ЗАГЛУШКА КЛЮЧА АДМИНИСТРАТОРА")
 	for _, c := range []struct {
 		name, url, key, region, state string
 		missing                       bool

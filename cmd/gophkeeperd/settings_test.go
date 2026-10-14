@@ -24,7 +24,7 @@ func loadWith(t *testing.T, env map[string]string, args ...string) string {
 		t.Setenv(k, v)
 	}
 	require.NoError(t, fs.Parse(args), "флаги не разобраны")
-	if err := load(fs, &s, flags); err != nil {
+	if err := load(fs, flags); err != nil {
 		return "ошибка: " + err.Error()
 	}
 	return s.Queue + "|" + s.Server + " " + s.ServerKey + " " + s.AccessSeed + " " + s.Region + " " + s.AppKey

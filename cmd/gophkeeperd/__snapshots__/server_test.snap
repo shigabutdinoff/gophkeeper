@@ -1,0 +1,4 @@
+
+[TestServerLoad - 1]
+[]string{"file: {Address:file-address Cert:file-cert Key:file-key TokenKey:file-token-key AppKey:file-app-key ServerKey:file-server-key Database:file-database}", "flag: {Address:flag-address Cert:flag-cert Key:flag-key TokenKey:flag-token-key AppKey:flag-app-key ServerKey:flag-server-key Database:flag-database}", "env: {Address:env-address Cert:env-cert Key:env-key TokenKey:env-token-key AppKey:env-app-key ServerKey:env-server-key Database:env-database}", "none: ошибка: не заданы адрес приёма соединений (GOPHKEEPER_ADDRESS, --address или address в файле настроек), файл ключа подписи токенов (GOPHKEEPER_TOKEN_KEY, --token-key или token_key в файле настроек), ключ приложения на сервере (GOPHKEEPER_APP_KEY, --app-key или app_key в файле настроек), ключ доступа к серверу (GOPHKEEPER_SERVER_KEY, --server-key или server_key в файле настроек), адрес базы данных (GOPHKEEPER_DATABASE, --database или database в файле настроек)"}
+---

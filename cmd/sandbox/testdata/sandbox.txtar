@@ -13,6 +13,7 @@ stranger
 
 exec sandbox down
 stdout 'песочница остановлена'
+! exists docker.log
 
 exec sandbox down
 stdout 'песочница не запущена'
@@ -29,6 +30,7 @@ stdout 'песочница остановлена'
 stdout 'песочница сброшена'
 ! exists $CONFIG/gophkeeper/sandbox
 ! exists $CONFIG/gophkeeper/config.yaml
+! exists docker.log
 
 cp own.yaml $CONFIG/gophkeeper/config.yaml
 exec sandbox up
