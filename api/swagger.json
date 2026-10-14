@@ -1,0 +1,943 @@
+{
+    "schemes": [
+        "https"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "description": "Собственный сервер GophKeeper. Отвечает на те же адреса и в том же формате, что Supabase Auth,\nPostgREST и S3 в Supabase Storage, поэтому клиент работает и с ним, и с облачным Supabase.",
+        "title": "GophKeeper",
+        "contact": {},
+        "license": {
+            "name": "MIT"
+        },
+        "version": "27.0"
+    },
+    "paths": {
+        "/auth/v1/logout": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": [],
+                        "ProjectKey": []
+                    }
+                ],
+                "description": "Завершает сессию токена входа. Повторяет метод /logout Supabase Auth\nhttps://github.com/supabase/auth/blob/ce9a8eee0cc042be8c7a42981a7ddae631e41d91/openapi.yaml (лицензия MIT).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Выход на этом устройстве",
+                "parameters": [
+                    {
+                        "enum": [
+                            "local"
+                        ],
+                        "type": "string",
+                        "description": "Какие сессии завершить",
+                        "name": "scope",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "validation_failed",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "code": {
+                                    "type": "integer"
+                                },
+                                "error_code": {
+                                    "type": "string"
+                                },
+                                "msg": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/v1/signup": {
+            "post": {
+                "security": [
+                    {
+                        "ProjectKey": []
+                    }
+                ],
+                "description": "Создаёт учётную запись и сразу выдаёт сессию. Повторяет метод /signup Supabase Auth\nhttps://github.com/supabase/auth/blob/ce9a8eee0cc042be8c7a42981a7ddae631e41d91/openapi.yaml (лицензия MIT).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Регистрация пользователя",
+                "parameters": [
+                    {
+                        "description": "Почта и пароль",
+                        "name": "credentials",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/server.credentials"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/server.issued"
+                        }
+                    },
+                    "400": {
+                        "description": "validation_failed",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "code": {
+                                    "type": "integer"
+                                },
+                                "error_code": {
+                                    "type": "string"
+                                },
+                                "msg": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "user_already_exists",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "code": {
+                                    "type": "integer"
+                                },
+                                "error_code": {
+                                    "type": "string"
+                                },
+                                "msg": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/v1/token": {
+            "post": {
+                "security": [
+                    {
+                        "ProjectKey": []
+                    }
+                ],
+                "description": "Выдаёт токены по паролю (grant_type=password, тело с email и password) или по токену\nпродления (grant_type=refresh_token, тело с refresh_token). Повторяет метод /token Supabase Auth\nhttps://github.com/supabase/auth/blob/ce9a8eee0cc042be8c7a42981a7ddae631e41d91/openapi.yaml (лицензия MIT).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Вход и продление сессии",
+                "parameters": [
+                    {
+                        "enum": [
+                            "password",
+                            "refresh_token"
+                        ],
+                        "type": "string",
+                        "description": "Способ входа",
+                        "name": "grant_type",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "description": "Почта и пароль или токен продления",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "email": {
+                                    "type": "string"
+                                },
+                                "password": {
+                                    "type": "string"
+                                },
+                                "refresh_token": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/server.issued"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid_credentials, refresh_token_not_found или validation_failed",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "code": {
+                                    "type": "integer"
+                                },
+                                "error_code": {
+                                    "type": "string"
+                                },
+                                "msg": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/rest/v1/records": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": [],
+                        "ProjectKey": []
+                    }
+                ],
+                "description": "Отдаёт записи владельца токена входа по возрастанию id, не больше 1000 за запрос. Как PostgREST в Supabase.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "records"
+                ],
+                "summary": "Записи владельца токена",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Фильтр по id в виде eq.\u003cuuid\u003e или gt.\u003cuuid\u003e",
+                        "name": "id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Сколько записей отдать, не больше 1000",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/server.entry"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный фильтр",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "code": {
+                                    "type": "string"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Токен входа не подходит",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "code": {
+                                    "type": "string"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "Bearer": [],
+                        "ProjectKey": []
+                    }
+                ],
+                "description": "Создаёт запись или заменяет note и secret существующей. Только со служебным ключом. Как PostgREST в Supabase.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "records"
+                ],
+                "summary": "Сохранение записи",
+                "parameters": [
+                    {
+                        "description": "Запись с id и user_id",
+                        "name": "record",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/server.stored"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Запись заменена",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "user_id": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "201": {
+                        "description": "Запись создана",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "user_id": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Неверное тело",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "code": {
+                                    "type": "string"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Нет служебного ключа",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "code": {
+                                    "type": "string"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Токен пользователя вместо служебного ключа",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "code": {
+                                    "type": "string"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": [],
+                        "ProjectKey": []
+                    }
+                ],
+                "description": "Удаляет запись владельца. Только со служебным ключом. Как PostgREST в Supabase.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "records"
+                ],
+                "summary": "Удаление записи",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Владелец в виде eq.\u003cuuid\u003e",
+                        "name": "user_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Запись в виде eq.\u003cuuid\u003e",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Удалённые записи, пустой массив если записи нет",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "user_id": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный фильтр",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "code": {
+                                    "type": "string"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Нет служебного ключа",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "code": {
+                                    "type": "string"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Токен пользователя вместо служебного ключа",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "code": {
+                                    "type": "string"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "Bearer": [],
+                        "ProjectKey": []
+                    }
+                ],
+                "description": "Меняет note и secret записи владельца. Только со служебным ключом. Как PostgREST в Supabase.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "records"
+                ],
+                "summary": "Изменение записи",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Владелец в виде eq.\u003cuuid\u003e",
+                        "name": "user_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Запись в виде eq.\u003cuuid\u003e",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "description": "Новые note и secret",
+                        "name": "record",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "note": {
+                                    "type": "string"
+                                },
+                                "secret": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Изменённые записи, пустой массив если записи нет",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "user_id": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный фильтр или тело",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "code": {
+                                    "type": "string"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Нет служебного ключа",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "code": {
+                                    "type": "string"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Токен пользователя вместо служебного ключа",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "code": {
+                                    "type": "string"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/storage/v1/s3/files/{owner}/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "S3Token": []
+                    }
+                ],
+                "description": "Отдаёт файл владельцу токена входа или со служебным ключом в X-Amz-Security-Token. Как S3 в Supabase Storage.",
+                "produces": [
+                    "application/octet-stream",
+                    "text/plain"
+                ],
+                "tags": [
+                    "files"
+                ],
+                "summary": "Выдача файла",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Владелец записи",
+                        "name": "owner",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Файл",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "403": {
+                        "description": "Ошибка S3 в XML, токен не подходит",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Ошибка S3 в XML, файла нет или он чужой",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "S3Token": []
+                    }
+                ],
+                "description": "Сохраняет файл записи до 50 МиБ. Только со служебным ключом в X-Amz-Security-Token. Как S3 в Supabase Storage,\nподпись SigV4 клиент S3 ставит сам, сервер её не проверяет.",
+                "consumes": [
+                    "application/octet-stream"
+                ],
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "files"
+                ],
+                "summary": "Сохранение файла",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Владелец записи",
+                        "name": "owner",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Файл",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Содержимое файла",
+                        "name": "file",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Файл сохранён, ETag в заголовке"
+                    },
+                    "403": {
+                        "description": "Ошибка S3 в XML, нет служебного ключа",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "413": {
+                        "description": "Ошибка S3 в XML, файл больше предела",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "S3Token": []
+                    }
+                ],
+                "description": "Удаляет файл, отсутствующий файл тоже считается удалённым. Только со служебным ключом. Как S3 в Supabase Storage.",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "files"
+                ],
+                "summary": "Удаление файла",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Владелец записи",
+                        "name": "owner",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Файл",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "403": {
+                        "description": "Ошибка S3 в XML, нет служебного ключа",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "server.credentials": {
+            "type": "object",
+            "required": [
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "server.entry": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "note": {
+                    "type": "string"
+                },
+                "secret": {
+                    "type": "string"
+                }
+            }
+        },
+        "server.identity": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "identity_data": {
+                    "$ref": "#/definitions/server.profile"
+                },
+                "identity_id": {
+                    "type": "string"
+                },
+                "last_sign_in_at": {
+                    "type": "string"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "server.issued": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "expires_at": {
+                    "type": "integer"
+                },
+                "expires_in": {
+                    "type": "integer"
+                },
+                "refresh_token": {
+                    "type": "string"
+                },
+                "token_type": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/server.user"
+                },
+                "weak_password": {
+                    "type": "object",
+                    "x-nullable": true
+                }
+            }
+        },
+        "server.profile": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "email_verified": {
+                    "type": "boolean"
+                },
+                "phone_verified": {
+                    "type": "boolean"
+                },
+                "sub": {
+                    "type": "string"
+                }
+            }
+        },
+        "server.stored": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "note": {
+                    "type": "string"
+                },
+                "secret": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "server.user": {
+            "type": "object",
+            "properties": {
+                "app_metadata": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "aud": {
+                    "type": "string"
+                },
+                "confirmed_at": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "email_confirmed_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "identities": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/server.identity"
+                    }
+                },
+                "is_anonymous": {
+                    "type": "boolean"
+                },
+                "last_sign_in_at": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_metadata": {
+                    "$ref": "#/definitions/server.profile"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "Bearer": {
+            "description": "Bearer и токен входа, для сохранения и удаления записей Bearer и служебный ключ.",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        },
+        "ProjectKey": {
+            "description": "Ключ проекта, публичный или служебный.",
+            "type": "apiKey",
+            "name": "apikey",
+            "in": "header"
+        },
+        "S3Token": {
+            "description": "Токен входа или служебный ключ.",
+            "type": "apiKey",
+            "name": "X-Amz-Security-Token",
+            "in": "header"
+        }
+    }
+}

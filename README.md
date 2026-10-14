@@ -5,7 +5,8 @@
 Данные шифруются на устройстве: сервер и даже его владелец видят их только
 зашифрованными, открыты лишь пометки для поиска.
 
-Клиент работает в macOS, Linux и Windows на amd64 и arm64.
+Клиент работает в macOS, Linux и Windows на amd64 и arm64. Он подключается к
+своему серверу gophkeeperd или к облачным Supabase и Synadia.
 
 ## Документация
 
@@ -60,6 +61,32 @@ sudo mv gophkeeper /usr/local/bin/
 ```sh
 make build     # ./gophkeeper для текущей системы
 make release   # файлы для всех систем в dist/
+```
+
+## Сервер
+
+### Песочница
+
+Песочница поднимает сервер на этом компьютере и записывает настройки клиента,
+после неё сразу работают `register` и `login`. Команды вызываются из корня
+репозитория, для `--own` нужен запущенный Docker.
+
+```sh
+go run ./cmd/sandbox up --own   # свой сервер, Postgres в Docker и очередь изменений
+go run ./cmd/sandbox up         # очередь изменений здесь, сервер в облачном Supabase
+go run ./cmd/sandbox cloud      # облачные Supabase и очередь Synadia
+go run ./cmd/sandbox down       # остановка с сохранением данных
+go run ./cmd/sandbox reset      # остановка с удалением данных и настроек
+```
+
+### Свой сервер
+
+На странице выпусков лежит только клиент, сервер собирается из исходников:
+
+```sh
+go build ./cmd/gophkeeperd
+./gophkeeperd server --help     # приём запросов клиентов по TLS
+./gophkeeperd worker --help     # применение изменений из очереди к серверу
 ```
 
 [страницы выпусков]: https://github.com/shigabutdinoff/gophkeeper/releases

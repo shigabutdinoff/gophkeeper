@@ -100,8 +100,8 @@ func (r *running) wait(t *testing.T) error {
 }
 
 func (r *running) client(protos ...string) *http.Client {
-	return &http.Client{Timeout: 5 * time.Second, Transport: &http.Transport{ForceAttemptHTTP2: len(protos) > 0,
-		TLSClientConfig: &tls.Config{RootCAs: r.pool, NextProtos: protos}}}
+	return &http.Client{Timeout: 5 * time.Second, Transport: checked{&http.Transport{ForceAttemptHTTP2: len(protos) > 0,
+		TLSClientConfig: &tls.Config{RootCAs: r.pool, NextProtos: protos}}}}
 }
 
 type reply struct {

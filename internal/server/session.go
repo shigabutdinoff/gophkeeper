@@ -12,7 +12,7 @@ type issued struct {
 	ExpiresAt    int64           `json:"expires_at"`
 	RefreshToken string          `json:"refresh_token"`
 	User         user            `json:"user"`
-	WeakPassword json.RawMessage `json:"weak_password,omitempty"`
+	WeakPassword json.RawMessage `json:"weak_password,omitempty" swaggertype:"object" extensions:"x-nullable"`
 }
 
 type user struct {
