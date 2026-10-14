@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"fmt"
-
 	"charm.land/lipgloss/v2"
 	"charm.land/lipgloss/v2/table"
 	"github.com/spf13/cobra"
@@ -11,11 +9,17 @@ import (
 )
 
 func showList(c *cobra.Command, o online) error {
-	list, err := account.List(c.Context(), httpClient, o.s, o.keys.Access)
-	if err != nil {
-		return err
+	list, err := []account.Entry(nil), o.keys.Down
+	if err == nil {
+		list, err = account.List(c.Context(), httpClient, o.s, o.keys.Access)
 	}
-	if len(list) == 0 {
+	head := ""
+	switch list = merge(list, o.left); {
+	case err != nil && (o.keys.Down == nil || len(list) == 0):
+		return err
+	case err != nil:
+		head = "сервер недоступен, показаны только неотправленные записи\n"
+	case len(list) == 0:
 		return report(c, "Записей нет.")
 	}
 	t := table.New().Headers("Тип", "Пометка", "Идентификатор").
@@ -28,10 +32,10 @@ func showList(c *cobra.Command, o online) error {
 		if k.name == "file" {
 			k.title += " " + f["name"] + ", " + sized(f)
 		}
+		if _, ok := o.left[e.ID]; ok {
+			k.title += ", " + unsentMark
+		}
 		t.Row(k.title, e.Note, e.ID)
 	}
-	if _, err = fmt.Fprintln(c.OutOrStdout(), t); err != nil {
-		return fmt.Errorf("вывод результата: %w", err)
-	}
-	return nil
+	return report(c, head+t.String())
 }

@@ -13,6 +13,7 @@ import (
 
 	"github.com/shigabutdinoff/gophkeeper/internal/config"
 	"github.com/shigabutdinoff/gophkeeper/internal/queuetest"
+	"github.com/shigabutdinoff/gophkeeper/internal/record"
 )
 
 var dataKey = base64.RawURLEncoding.EncodeToString(bytes.Repeat([]byte{7}, 32))
@@ -116,14 +117,73 @@ func TestOutboxUnavailable(t *testing.T) {
 
 func TestFlush(t *testing.T) {
 	q := device(t)
-	require.NoError(t, Flush(t.Context(), q.Client, anna, dataKey, "токен"), "пустое устройство не выгружено")
+	left, err := Flush(t.Context(), q.Client, anna, dataKey, "токен")
+	require.NoError(t, err, "пустое устройство не выгружено")
+	assert.Empty(t, left, "у пустого устройства есть изменения")
 	assert.False(t, Kept(), "выгрузка пустого устройства создала очередь")
 	kept(t, q, anna)
-	require.NoError(t, Flush(t.Context(), config.Settings{}, anna, dataKey, "токен"), "выгрузка без адреса не пропущена")
+	left, err = Flush(t.Context(), config.Settings{}, anna, dataKey, "токен")
+	require.NoError(t, err, "выгрузка без адреса не пропущена")
+	assert.Empty(t, left, "без адреса прочитаны изменения")
 	q.Start(t, false)
-	require.NoError(t, Flush(t.Context(), q.Client, anna, dataKey, q.Token(t, anna, time.Hour)), "изменение не выгружено")
+	left, err = Flush(t.Context(), q.Client, anna, dataKey, q.Token(t, anna, time.Hour))
+	require.NoError(t, err, "изменение не выгружено")
+	assert.Empty(t, left, "выгруженное изменение осталось в остатке")
 	assert.Equal(t, uint64(1), count(t, q), "в очереди не одно изменение")
 	assert.False(t, Kept(), "выгруженное изменение осталось на устройстве")
+}
+
+func keep(t *testing.T, q *queuetest.Queue, msgs ...*nats.Msg) {
+	t.Helper()
+	o := open(t, q, anna, "")
+	defer o.Close()
+	for _, msg := range msgs {
+		require.NoError(t, o.Put(t.Context(), msg), "изменение не сохранено на устройстве")
+	}
+}
+
+func put(t *testing.T, note string) (*nats.Msg, string) {
+	t.Helper()
+	msg, id, err := record.Put(dataKey, anna, map[string]string{"login": "anna", "password": "s3cret"}, note)
+	require.NoError(t, err, "запись не собрана")
+	return msg, id
+}
+
+func TestFlushLeftEdit(t *testing.T) {
+	q := device(t)
+	added, id := put(t, "старая")
+	edited, err := record.Edit(dataKey, anna, id, map[string]string{"login": "anna", "password": "new"}, "новая")
+	require.NoError(t, err, "правка не собрана")
+	keep(t, q, added, edited)
+	left, err := Flush(t.Context(), q.Client, anna, dataKey, "")
+	assert.ErrorIs(t, err, ErrDenied, "без токена изменения отправлены")
+	require.Len(t, left, 1, "в остатке не одна запись")
+	assert.Equal(t, []string{"edit", "новая"}, []string{left[id].Op, left[id].Note}, "в остатке не последняя правка")
+	assert.True(t, Kept(), "неотправленные изменения удалены")
+}
+
+func TestFlushLeftDelete(t *testing.T) {
+	q := device(t)
+	added, id := put(t, "удалить")
+	deleted, err := record.Delete(anna, id)
+	require.NoError(t, err, "удаление не собрано")
+	other, otherID := put(t, "другая")
+	keep(t, q, added, change("неразборчивое"), deleted, other)
+	left, _ := Flush(t.Context(), q.Client, anna, dataKey, "")
+	assert.Len(t, left, 2, "в остатке не две записи")
+	assert.Equal(t, "delete", left[id].Op, "удаление не последнее изменение")
+	assert.Equal(t, "put", left[otherID].Op, "вторая запись потеряна")
+}
+
+func TestFlushLeftUnavailable(t *testing.T) {
+	q := device(t)
+	added, id := put(t, "без связи")
+	keep(t, q, added)
+	ctx, cancel := context.WithTimeout(t.Context(), 300*time.Millisecond)
+	defer cancel()
+	left, err := Flush(ctx, q.Client, anna, dataKey, q.Token(t, anna, time.Hour))
+	assert.ErrorIs(t, err, ErrUnavailable, "недоступная очередь не распознана")
+	assert.Equal(t, "без связи", left[id].Note, "остаток не прочитан после срока")
 }
 
 func TestOpenRefuses(t *testing.T) {

@@ -8,24 +8,27 @@ import (
 	"slices"
 
 	"github.com/shigabutdinoff/gophkeeper/internal/config"
+	"github.com/shigabutdinoff/gophkeeper/internal/record"
 )
 
 // Flush отправляет изменения, сохранённые на устройстве пользователем user,
-// если они есть. Параметры такие же, как у Open.
-func Flush(ctx context.Context, s config.Settings, user, data, access string) error {
+// и возвращает последнее оставшееся изменение каждой записи вместе с ошибкой
+// отправки. Параметры такие же, как у Open.
+func Flush(ctx context.Context, s config.Settings, user, data, access string) (map[string]record.Change, error) {
 	root, err := outboxRoot()
 	if err != nil || s.QueueLeaf == "" {
-		return err
+		return nil, err
 	}
 	if _, err = os.Stat(filepath.Join(root, user)); err != nil {
-		return nil
+		return nil, nil
 	}
 	o, err := Open(ctx, s, user, data, access)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer o.Close()
-	return o.Drain(ctx)
+	err = o.Drain(ctx)
+	return o.left(ctx), err
 }
 
 // Kept сообщает, остались ли на устройстве неотправленные изменения.
