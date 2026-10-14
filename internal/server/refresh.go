@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/golang-jwt/jwt/v5/request"
 	"gorm.io/gorm"
 )
 
@@ -30,7 +31,7 @@ func (a *auth) refresh(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *auth) logout(w http.ResponseWriter, r *http.Request) {
-	claims, err := a.bearer(r)
+	claims, err := a.bearer(r, request.AuthorizationHeaderExtractor)
 	switch {
 	case err != nil || r.URL.Query().Get("scope") != "local":
 		respond(w, http.StatusBadRequest, invalid)

@@ -20,6 +20,8 @@ import (
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/shigabutdinoff/gophkeeper/internal/queuetest"
 )
 
 const rawGet = "GET / HTTP/1.1\r\nHost: localhost\r\napikey: app-key\r\n"
@@ -182,8 +184,41 @@ func TestStoppedBeforeServe(t *testing.T) {
 	require.NoError(t, err, "порт не занят")
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
-	assert.NoError(t, Serve(ctx, l, Settings{Cert: cert, Key: key, TokenKey: tokenKey(t), Database: database(t)}), "сервер остановился с ошибкой")
+	js, _ := queuetest.New(t).Run(t, false)
+	assert.NoError(t, Serve(ctx, l, Settings{Cert: cert, Key: key, TokenKey: tokenKey(t), Database: database(t), Queue: js, FilesLimit: 1 << 20}),
+		"сервер остановился с ошибкой")
 	l, err = net.Listen("tcp", l.Addr().String())
 	require.NoError(t, err, "порт остался занят")
 	l.Close()
+}
+
+func TestNoQueue(t *testing.T) {
+	cert, key, _ := certFiles(t)
+	dsn, signing := database(t), tokenKey(t)
+	js, _ := queuetest.New(t).Run(t, false)
+	for name, s := range map[string]Settings{"без очереди": {FilesLimit: 1 << 20}, "без предела": {Queue: js}, "предел меньше нуля": {Queue: js, FilesLimit: -1}} {
+		s.Cert, s.Key, s.TokenKey, s.Database = cert, key, signing, dsn
+		addr, err := serveOnce(t, s)
+		assert.ErrorIs(t, err, ErrNoQueue, "сервер запустился: %s", name)
+		l, err := net.Listen("tcp", addr.String())
+		require.NoError(t, err, "порт остался занят: %s", name)
+		l.Close()
+	}
+	assert.EqualError(t, ErrNoQueue, "нужны подключение к очереди и предел корзины файлов")
+}
+
+func TestFilesBucket(t *testing.T) {
+	r := start(t)
+	require.Equal(t, http.StatusOK, r.get(t, keysPath, nil).status, "сервер не запустился")
+	names, info := filesBucket(t, r.js)
+	assert.Equal(t, []string{".keep"}, names, "в новой корзине файлов не одна метка")
+	assert.EqualValues(t, 1<<30, info.Config.MaxBytes, "предел корзины файлов не из настроек")
+	r.stop()
+	require.NoError(t, r.wait(t), "сервер остановился с ошибкой")
+	r.limit = 2 << 20
+	r.serve(t)
+	require.Equal(t, http.StatusOK, r.get(t, keysPath, nil).status, "сервер не запустился снова")
+	names, info = filesBucket(t, r.js)
+	assert.Equal(t, []string{".keep"}, names, "повторный запуск продублировал метку")
+	assert.EqualValues(t, 2<<20, info.Config.MaxBytes, "предел корзины файлов не обновлён")
 }

@@ -1,0 +1,3 @@
+200
+content-length: 0
+etag: <etag>

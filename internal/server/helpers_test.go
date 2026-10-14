@@ -14,7 +14,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/require"
+
+	"github.com/shigabutdinoff/gophkeeper/internal/queuetest"
 )
 
 type running struct {
@@ -22,6 +25,9 @@ type running struct {
 	dsn                 string
 	cert, key, tokenKey string
 	pool                *x509.CertPool
+	q                   *queuetest.Queue
+	js                  jetstream.JetStream
+	limit               int64
 	stop                context.CancelFunc
 	done                chan struct{}
 	err                 error
@@ -61,7 +67,9 @@ func start(t *testing.T) *running {
 func startOn(t *testing.T, dsn, tokenKey string) *running {
 	t.Helper()
 	cert, key, pool := certFiles(t)
-	r := &running{addr: "127.0.0.1:0", dsn: dsn, cert: cert, key: key, tokenKey: tokenKey, pool: pool}
+	q := queuetest.New(t)
+	js, _ := q.Run(t, false)
+	r := &running{addr: "127.0.0.1:0", dsn: dsn, cert: cert, key: key, tokenKey: tokenKey, pool: pool, q: q, js: js, limit: 1 << 30}
 	r.serve(t)
 	return r
 }
@@ -75,7 +83,8 @@ func (r *running) serve(t *testing.T) {
 	r.addr, r.stop, r.done = l.Addr().String(), cancel, done
 	go func() {
 		defer close(done)
-		r.err = Serve(ctx, l, Settings{Cert: r.cert, Key: r.key, AppKey: "app-key", ServerKey: "service-key", TokenKey: r.tokenKey, Database: r.dsn, Log: serverLog})
+		r.err = Serve(ctx, l, Settings{Cert: r.cert, Key: r.key, AppKey: "app-key", ServerKey: "service-key", TokenKey: r.tokenKey, Database: r.dsn, Log: serverLog,
+			Queue: r.js, FilesLimit: r.limit})
 	}()
 	t.Cleanup(func() { cancel(); <-done })
 }

@@ -29,7 +29,7 @@ func backend(state string) (c serviceConfig, cert string, err error) {
 	}
 	service, err := os.ReadFile(filepath.Join(state, serviceKeyFile))
 	app, aerr := os.ReadFile(filepath.Join(state, appKeyFile))
-	c.Supabase.URL, c.Supabase.Key, c.ServiceKey = httpsURL("https://"+ownAddr), string(app), string(service)
+	c.Supabase.URL, c.Supabase.Key, c.Supabase.Region, c.ServiceKey = httpsURL("https://"+ownAddr), string(app), "us-east-1", string(service)
 	return c, filepath.Join(state, caFile), errors.Join(err, aerr)
 }
 

@@ -7,6 +7,11 @@ env GOPHKEEPER_TOKEN_KEY=token-s3cret.pem
 env GOPHKEEPER_APP_KEY=app-s3cret
 env GOPHKEEPER_SERVER_KEY=service-s3cret
 env GOPHKEEPER_DATABASE=postgres://s3cret@db
+env GOPHKEEPER_QUEUE=$TEST_QUEUE
+env GOPHKEEPER_QUEUE_CA=$TEST_QUEUE_CA
+env GOPHKEEPER_QUEUE_USER=$TEST_QUEUE_USER
+env GOPHKEEPER_QUEUE_PASSWORD=$TEST_QUEUE_PASSWORD
+env GOPHKEEPER_FILES_LIMIT=1GB
 ! exec gophkeeperd server
 ! stdout .
 cmp stderr nocert.txt
@@ -43,8 +48,31 @@ env GOPHKEEPER_DATABASE=
 ! stderr s3cret
 cmp stderr database.txt
 
+env GOPHKEEPER_DATABASE=postgres://s3cret@db
+env GOPHKEEPER_QUEUE=
+! exec gophkeeperd server --cert cert.pem --key key.pem
+cmp stderr queue.txt
+
+env GOPHKEEPER_QUEUE=$TEST_QUEUE
+env GOPHKEEPER_FILES_LIMIT=
+! exec gophkeeperd server --cert cert.pem --key key.pem
+cmp stderr limit.txt
+
+env GOPHKEEPER_FILES_LIMIT=много
+! exec gophkeeperd server --cert cert.pem --key key.pem
+cmp stderr many.txt
+env GOPHKEEPER_FILES_LIMIT=
+! exec gophkeeperd server --cert cert.pem --key key.pem --files-limit 0
+stderr '^Ошибка: предел корзины файлов "0" не разобран'
+
+env GOPHKEEPER_FILES_LIMIT=1GB
+env GOPHKEEPER_QUEUE_PASSWORD=s3cret
+! exec gophkeeperd server --cert cert.pem --key key.pem
+! stderr s3cret
+stderr '^Ошибка: '
+
 -- missing.txt --
-Ошибка: не заданы адрес приёма соединений (GOPHKEEPER_ADDRESS, --address или address в файле настроек), файл ключа подписи токенов (GOPHKEEPER_TOKEN_KEY, --token-key или token_key в файле настроек), ключ приложения на сервере (GOPHKEEPER_APP_KEY, --app-key или app_key в файле настроек), ключ доступа к серверу (GOPHKEEPER_SERVER_KEY, --server-key или server_key в файле настроек), адрес базы данных (GOPHKEEPER_DATABASE, --database или database в файле настроек)
+Ошибка: не заданы адрес приёма соединений (GOPHKEEPER_ADDRESS, --address или address в файле настроек), файл ключа подписи токенов (GOPHKEEPER_TOKEN_KEY, --token-key или token_key в файле настроек), ключ приложения на сервере (GOPHKEEPER_APP_KEY, --app-key или app_key в файле настроек), ключ доступа к серверу (GOPHKEEPER_SERVER_KEY, --server-key или server_key в файле настроек), адрес базы данных (GOPHKEEPER_DATABASE, --database или database в файле настроек), адрес очереди изменений (GOPHKEEPER_QUEUE, --queue или queue в файле настроек), предел объёма корзины файлов (GOPHKEEPER_FILES_LIMIT, --files-limit или files_limit в файле настроек)
 -- nocert.txt --
 Ошибка: нужны сертификат и ключ сервера
 -- address.txt --
@@ -55,5 +83,11 @@ cmp stderr database.txt
 Ошибка: не заданы ключ приложения на сервере (GOPHKEEPER_APP_KEY, --app-key или app_key в файле настроек)
 -- service.txt --
 Ошибка: не заданы ключ доступа к серверу (GOPHKEEPER_SERVER_KEY, --server-key или server_key в файле настроек)
+-- queue.txt --
+Ошибка: не заданы адрес очереди изменений (GOPHKEEPER_QUEUE, --queue или queue в файле настроек)
+-- limit.txt --
+Ошибка: не заданы предел объёма корзины файлов (GOPHKEEPER_FILES_LIMIT, --files-limit или files_limit в файле настроек)
+-- many.txt --
+Ошибка: предел корзины файлов "много" не разобран, нужен объём вроде 1GB
 -- database.txt --
 Ошибка: не заданы адрес базы данных (GOPHKEEPER_DATABASE, --database или database в файле настроек)

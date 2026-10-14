@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/base64"
 	"log"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"sync"
 	"testing"
 	"time"
+	"uuid"
 
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
@@ -17,8 +19,10 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/shigabutdinoff/gophkeeper/internal/access"
+	"github.com/shigabutdinoff/gophkeeper/internal/queue"
 	"github.com/shigabutdinoff/gophkeeper/internal/queuetest"
 	"github.com/shigabutdinoff/gophkeeper/internal/record"
+	"github.com/shigabutdinoff/gophkeeper/internal/storage"
 	"github.com/shigabutdinoff/gophkeeper/internal/worker"
 )
 
@@ -41,31 +45,29 @@ func (j *journal) String() string {
 
 type flow struct {
 	r    *running
-	q    *queuetest.Queue
 	data string
 	log  *journal
 }
 
 func startFlow(t *testing.T) *flow {
 	t.Helper()
-	f := &flow{r: start(t), q: queuetest.New(t), data: base64.RawURLEncoding.EncodeToString(make([]byte, 32)), log: &journal{}}
-	js, _ := f.q.Run(t, false)
-	stop, err := access.Serve(t.Context(), js.Conn(), f.q.Seed, "", "https://"+f.r.addr, f.r.client(), f.q.Server)
+	r := start(t)
+	f := &flow{r: r, data: base64.RawURLEncoding.EncodeToString(make([]byte, 32)), log: &journal{}}
+	stop, err := access.Serve(t.Context(), r.js.Conn(), r.q.Seed, "", "https://"+f.r.addr, f.r.client(), r.q.Server)
 	require.NoError(t, err, "служба доступа не получила ключи сервера")
 	t.Cleanup(func() { stop() })
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
-	go func() {
-		done <- worker.Run(ctx, js, worker.Server{URL: "https://" + f.r.addr, Key: "service-key", Client: f.r.client(),
-			Log: log.New(f.log, "", 0), Files: f.r.files("service-key"), Seed: f.q.Seed})
-	}()
+	s := worker.Server{URL: "https://" + f.r.addr, Key: "service-key", Client: f.r.client(), Log: log.New(f.log, "", 0), Seed: r.q.Seed,
+		Files: f.r.files("service-key")}
+	go func() { done <- worker.Run(ctx, r.js, s) }()
 	t.Cleanup(func() { cancel(); <-done })
 	return f
 }
 
 func (f *flow) device(t *testing.T, g granted) jetstream.JetStream {
 	t.Helper()
-	return queuetest.JetStream(t, f.q.Client, func(o *nats.Options) error {
+	return queuetest.JetStream(t, f.r.q.Client, func(o *nats.Options) error {
 		o.Token, o.InboxPrefix = g.Access, nats.InboxPrefix+g.User.ID
 		return nil
 	})
@@ -141,4 +143,79 @@ func TestFlowThroughQueue(t *testing.T) {
 		"обработчик не пытался применить изменение при остановленном сервере: %s", f.log)
 	f.r.serve(t)
 	f.await(t, anna, map[string]string{login: "работа annanew", later: "позже потом"}, "изменение при остановленном сервере не применено после запуска")
+}
+
+func (f *flow) file(t *testing.T, g granted, plain []byte) string {
+	t.Helper()
+	id := uuid.NewV7().String()
+	sealed, err := record.SealFile(f.data, id, plain)
+	require.NoError(t, err, "файл не зашифрован")
+	require.NoError(t, queue.Upload(t.Context(), f.r.q.Client, g.User.ID, id, sealed, nats.Token(g.Access), nats.CustomInboxPrefix(nats.InboxPrefix+g.User.ID)),
+		"файл не загружен в очередь")
+	msg, err := record.PutFile(f.data, g.User.ID, id, map[string]string{"type": "file", "name": "файл"}, "файл", sealed)
+	f.send(t, f.device(t, g), msg, err)
+	return id
+}
+
+func (f *flow) fetch(t *testing.T, token, owner, id string) ([]byte, error) {
+	t.Helper()
+	sealed, err := f.r.files(token).Get(t.Context(), owner, id, record.MaxSealed)
+	if err != nil {
+		return nil, err
+	}
+	return record.OpenFile(f.data, id, sealed)
+}
+
+func (f *flow) awaitFile(t *testing.T, g granted, id string, want []byte) {
+	t.Helper()
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		got, err := f.fetch(t, g.Access, g.User.ID, id)
+		assert.NoError(c, err)
+		assert.True(c, bytes.Equal(want, got), "файл выдан не тем")
+	}, 2*time.Minute, 100*time.Millisecond, "файл %s не дошёл до сервера", id)
+}
+
+func TestFlowFiles(t *testing.T) {
+	f := startFlow(t)
+	anna, boris := f.r.user(t), f.r.user(t)
+	small, big := []byte(rand.Text()), make([]byte, record.MaxFile)
+	_, err := rand.Read(big)
+	require.NoError(t, err, "большой файл не заполнен")
+	smallID, bigID := f.file(t, anna, small), f.file(t, anna, big)
+	f.awaitFile(t, anna, smallID, small)
+	f.awaitFile(t, anna, bigID, big)
+	_, err = f.fetch(t, boris.Access, anna.User.ID, smallID)
+	assert.ErrorIs(t, err, storage.ErrNoObject, "Борис получил файл Анны")
+
+	f.r.stop()
+	require.NoError(t, f.r.wait(t), "сервер остановился с ошибкой")
+	f.r.serve(t)
+	f.awaitFile(t, anna, smallID, small)
+	f.awaitFile(t, anna, bigID, big)
+
+	msg, err := record.Delete(anna.User.ID, smallID)
+	f.send(t, f.device(t, anna), msg, err)
+	later := f.put(t, f.device(t, anna), anna.User.ID, map[string]string{"type": "text", "text": "потом"}, "после файла")
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		_, err := f.fetch(t, "service-key", anna.User.ID, smallID)
+		assert.ErrorIs(c, err, storage.ErrNoObject)
+		assert.Contains(c, f.seen(t, anna), later)
+	}, 20*time.Second, 50*time.Millisecond, "удаление записи не убрало файл или очередь встала")
+}
+
+func TestFlowFilesFull(t *testing.T) {
+	f := startFlow(t)
+	f.r.stop()
+	require.NoError(t, f.r.wait(t), "сервер остановился с ошибкой")
+	f.r.limit = 64 << 10
+	f.r.serve(t)
+	anna := f.r.user(t)
+	kept := []byte(rand.Text())
+	keptID := f.file(t, anna, kept)
+	f.awaitFile(t, anna, keptID, kept)
+	f.file(t, anna, make([]byte, 100<<10))
+	assert.Eventually(t, func() bool { return strings.Contains(f.log.String(), "не применено, повтор") }, 20*time.Second, 50*time.Millisecond,
+		"обработчик не повторяет запись с файлом сверх предела корзины: %s", f.log)
+	got, err := f.fetch(t, anna.Access, anna.User.ID, keptID)
+	assert.True(t, err == nil && bytes.Equal(kept, got), "прежний файл не выдан при полной корзине: %v", err)
 }

@@ -12,10 +12,13 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/nats-io/nats-server/v2/server"
+	natstest "github.com/nats-io/nats-server/v2/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/shigabutdinoff/gophkeeper/internal/account"
+	"github.com/shigabutdinoff/gophkeeper/internal/record"
 )
 
 func ownState(t *testing.T) string {
@@ -112,11 +115,17 @@ func TestOwnServer(t *testing.T) {
 	require.NoError(t, err, "адрес своего сервера не открыт")
 	_, err = ownServer(state)
 	assert.ErrorContains(t, err, "адрес своего сервера "+ownAddr+" не открыт: ", "занятый адрес открыт повторно")
+	opts, _, err := serverOptions(state, server.RANDOM_PORT)
+	require.NoError(t, err, "настройки очереди песочницы не собраны")
+	opts.NoSigs = true
+	queue := natstest.RunServer(opts)
+	t.Cleanup(queue.Shutdown)
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
-	go func() { done <- own(ctx) }()
+	go func() { done <- own(ctx, queue) }()
 	c, cert, err := backend(state)
 	require.NoError(t, err, "режим своего сервера не прочитан")
+	assert.Equal(t, "us-east-1", c.Supabase.Region, "свой сервер не дал клиенту регион хранилища файлов")
 	client := &http.Client{Timeout: 5 * time.Second}
 	req, err := http.NewRequest(http.MethodGet, string(c.Supabase.URL)+"/auth/v1/health", nil)
 	require.NoError(t, err, "запрос не собран")
@@ -137,6 +146,11 @@ func TestOwnServer(t *testing.T) {
 	resp.Body.Close()
 	require.NoError(t, err, "ключи не прочитаны")
 	assert.Contains(t, string(keys), `"alg":"ES256"`, "ключ подписи токенов песочницы не принят сервером")
+	admin, err := sandboxUser(state, adminUser)
+	require.NoError(t, err, "пароль администратора не прочитан")
+	_, js := connect(t, queue.ClientURL(), filepath.Join(state, caFile), nil, admin)
+	_, err = js.ObjectStore(t.Context(), record.Bucket(c.ServiceKey, "files"))
+	assert.NoError(t, err, "свой сервер не открыл корзину файлов в очереди песочницы")
 	cancel()
 	require.NoError(t, <-done, "свой сервер остановился с ошибкой")
 
@@ -146,5 +160,5 @@ func TestOwnServer(t *testing.T) {
 	t.Setenv("SUPABASE_SERVICE_ROLE_KEY", "ключ администратора")
 	none, err := ownServer(t.TempDir())
 	require.NoError(t, err, "облачный режим открыл адрес своего сервера")
-	assert.NoError(t, none(t.Context()), "облачный режим запустил свой сервер")
+	assert.NoError(t, none(t.Context(), nil), "облачный режим запустил свой сервер")
 }

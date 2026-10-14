@@ -8,4 +8,6 @@ type serverSettings struct {
 	AppKey    string `flag:",required" desc:"ключ приложения на сервере"`
 	ServerKey string `flag:",required" desc:"ключ доступа к серверу"`
 	Database  string `flag:",required" desc:"адрес базы данных"`
+	queueSettings
+	FilesLimit string `flag:",required" desc:"предел объёма корзины файлов"`
 }

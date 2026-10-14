@@ -1,0 +1,4 @@
+404
+content-length: 238
+content-type: text/plain
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Error xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Resource>files/<owner></Resource><Code>NoSuchKey</Code><Message>Object not found</Message></Error>

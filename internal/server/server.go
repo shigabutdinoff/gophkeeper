@@ -18,7 +18,8 @@ var operations = http.NotFoundHandler()
 
 // Serve принимает защищённые соединения на l, пока не отменён ctx.
 // После отмены отвечает на начатые запросы не дольше десяти секунд.
-// Без ключа подписи токенов или базы данных приём не начинает.
+// Без ключа подписи токенов, базы данных или корзины файлов приём не
+// начинает.
 func Serve(ctx context.Context, l net.Listener, s Settings) error {
 	if s.Cert == "" || s.Key == "" {
 		return ErrNoCert
@@ -33,6 +34,9 @@ func Serve(ctx context.Context, l net.Listener, s Settings) error {
 	}
 	db, _ := a.db.DB()
 	defer db.Close()
+	if a.files, err = bucket(context.WithoutCancel(ctx), s); err != nil {
+		return err
+	}
 	srv := &http.Server{Handler: a.routes(s), ReadTimeout: readTimeout,
 		TLSConfig:    &tls.Config{Certificates: []tls.Certificate{cert}},
 		TLSNextProto: map[string]func(*http.Server, *tls.Conn, http.Handler){}}

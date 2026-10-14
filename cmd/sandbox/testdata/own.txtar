@@ -83,6 +83,7 @@ compose -p gophkeeper-sandbox -f compose.yaml down --volumes, каталог п�
 # gophkeeper-sandbox: файл записан командой sandbox, повторный запуск его заменяет
 server: https://127.0.0.1:<own>
 app_key: <app_key>
+region: us-east-1
 queue: tls://127.0.0.1:<queue>
 queue_ca: |
     <ca>

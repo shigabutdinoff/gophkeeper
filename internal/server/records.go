@@ -3,6 +3,8 @@ package server
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/golang-jwt/jwt/v5/request"
 )
 
 type entry struct {
@@ -12,7 +14,7 @@ type entry struct {
 }
 
 func (a *auth) records(w http.ResponseWriter, r *http.Request) {
-	claims, err := a.bearer(r)
+	claims, err := a.bearer(r, request.AuthorizationHeaderExtractor)
 	if err != nil {
 		respond(w, http.StatusUnauthorized, jwtInvalid)
 		return

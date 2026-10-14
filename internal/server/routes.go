@@ -6,7 +6,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-const keysPath = "/auth/v1/.well-known/jwks.json"
+const keysPath, filesPath = "/auth/v1/.well-known/jwks.json", "/storage/v1/s3/files/*"
 
 func (a *auth) routes(s Settings) http.Handler {
 	ops := chi.NewRouter()
@@ -23,8 +23,12 @@ func (a *auth) routes(s Settings) http.Handler {
 	keys := func(w http.ResponseWriter, _ *http.Request) { respond(w, http.StatusOK, string(a.keys)) }
 	r.Get(keysPath, keys)
 	r.Head(keysPath, keys)
-	r.Delete("/storage/v1/s3/files/*", files(s))
-	r.NotFound(guard(s, ops).ServeHTTP)
-	r.MethodNotAllowed(guard(s, ops).ServeHTTP)
-	return http.MaxBytesHandler(r, 1<<20)
+	file := http.MaxBytesHandler(a.file(s), objectLimit)
+	r.Method(http.MethodPut, filesPath, file)
+	r.Method(http.MethodGet, filesPath, file)
+	r.Method(http.MethodDelete, filesPath, file)
+	limited := http.MaxBytesHandler(guard(s, ops), 1<<20)
+	r.NotFound(limited.ServeHTTP)
+	r.MethodNotAllowed(limited.ServeHTTP)
+	return r
 }

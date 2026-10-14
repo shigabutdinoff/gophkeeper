@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+
+	"github.com/golang-jwt/jwt/v5/request"
 )
 
 const denied = `{"code":"42501","details":null,"hint":"Grant the required privileges to the current role with: GRANT %s ON public.records TO %s;","message":"permission denied for table records"}`
@@ -20,7 +22,7 @@ func (a *auth) writer(w http.ResponseWriter, r *http.Request, s Settings) bool {
 		w.Header().Set("WWW-Authenticate", "Bearer")
 		refuse(w, http.StatusUnauthorized, "SELECT, "+grants[r.Method], "anon")
 	default:
-		if _, err := a.bearer(r); err != nil {
+		if _, err := a.bearer(r, request.AuthorizationHeaderExtractor); err != nil {
 			respond(w, http.StatusUnauthorized, jwtInvalid)
 			return false
 		}

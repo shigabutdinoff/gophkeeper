@@ -24,6 +24,7 @@ import (
 
 	"github.com/shigabutdinoff/gophkeeper/internal/account"
 	"github.com/shigabutdinoff/gophkeeper/internal/config"
+	"github.com/shigabutdinoff/gophkeeper/internal/queuetest"
 	"github.com/shigabutdinoff/gophkeeper/internal/server"
 )
 
@@ -76,11 +77,13 @@ func startOwnOn(t *testing.T, dsn string) config.Settings {
 	cert := pemFile(t, "cert.pem", "CERTIFICATE", pair.Certificate[0])
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err, "порт не занят")
+	js, _ := queuetest.New(t).Run(t, false)
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
 	go func() {
 		done <- server.Serve(ctx, l, server.Settings{Cert: cert, Key: pemFile(t, "key.pem", "PRIVATE KEY", tlsKey), AppKey: "ключ-приложения",
-			ServerKey: "служебный-ключ", TokenKey: pemFile(t, "token.pem", "PRIVATE KEY", tokenKey), Database: dsn})
+			ServerKey: "служебный-ключ", TokenKey: pemFile(t, "token.pem", "PRIVATE KEY", tokenKey), Database: dsn,
+			Queue: js, FilesLimit: 1 << 30})
 	}()
 	t.Cleanup(func() {
 		cancel()

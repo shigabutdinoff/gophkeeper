@@ -27,6 +27,8 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/shigabutdinoff/gophkeeper/internal/queuetest"
 )
 
 func freeAddr(t *testing.T) string {
@@ -54,9 +56,13 @@ func serverFiles(t *testing.T, database string) *http.Client {
 		"key.pem": {Type: "PRIVATE KEY", Bytes: key}, "token-s3cret.pem": {Type: "PRIVATE KEY", Bytes: token}} {
 		require.NoError(t, os.WriteFile(filepath.Join(dir, name), pem.EncodeToMemory(block), 0o600), "файл %s не записан", name)
 	}
+	q := queuetest.New(t)
+	q.Run(t, false)
 	for k, v := range map[string]string{"CONFIG": "", "GOPHKEEPER_ADDRESS": "", "GOPHKEEPER_CERT": filepath.Join(dir, "cert.pem"),
 		"GOPHKEEPER_KEY": filepath.Join(dir, "key.pem"), "GOPHKEEPER_TOKEN_KEY": filepath.Join(dir, "token-s3cret.pem"),
-		"GOPHKEEPER_APP_KEY": "app-key", "GOPHKEEPER_SERVER_KEY": "service-key", "GOPHKEEPER_DATABASE": database} {
+		"GOPHKEEPER_APP_KEY": "app-key", "GOPHKEEPER_SERVER_KEY": "service-key", "GOPHKEEPER_DATABASE": database,
+		"GOPHKEEPER_QUEUE": q.Admin.Queue, "GOPHKEEPER_QUEUE_CA": q.Admin.QueueCA, "GOPHKEEPER_QUEUE_USER": q.Admin.QueueUser,
+		"GOPHKEEPER_QUEUE_PASSWORD": q.Admin.QueuePass, "GOPHKEEPER_QUEUE_CREDS_FILE": "", "GOPHKEEPER_FILES_LIMIT": "1MiB"} {
 		t.Setenv(k, v)
 	}
 	return srv.Client()
@@ -210,9 +216,9 @@ func loadServer(t *testing.T, env string, args ...string) string {
 
 func TestServerLoad(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "server.yaml")
-	require.NoError(t, os.WriteFile(path, []byte("address: file-address\ncert: file-cert\nkey: file-key\ntoken_key: file-token-key\napp_key: file-app-key\nserver_key: file-server-key\ndatabase: file-database\n"), 0o600), "файл настроек не записан")
+	require.NoError(t, os.WriteFile(path, []byte("address: file-address\ncert: file-cert\nkey: file-key\ntoken_key: file-token-key\napp_key: file-app-key\nserver_key: file-server-key\ndatabase: file-database\nqueue: file-queue\nfiles_limit: file-files-limit\n"), 0o600), "файл настроек не записан")
 	flags := []string{"-c", path, "--address", "flag-address", "--cert", "flag-cert", "--key", "flag-key", "--token-key", "flag-token-key",
-		"--app-key", "flag-app-key", "--server-key", "flag-server-key", "--database", "flag-database"}
+		"--app-key", "flag-app-key", "--server-key", "flag-server-key", "--database", "flag-database", "--queue", "flag-queue", "--files-limit", "flag-files-limit"}
 	snaps.MatchSnapshot(t, []string{
 		"file: " + loadServer(t, "", "-c", path),
 		"flag: " + loadServer(t, "", flags...),

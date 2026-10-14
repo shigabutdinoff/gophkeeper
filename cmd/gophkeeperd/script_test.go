@@ -6,6 +6,7 @@ import (
 
 	"github.com/rogpeppe/go-internal/testscript"
 
+	"github.com/shigabutdinoff/gophkeeper/internal/queuetest"
 	"github.com/shigabutdinoff/gophkeeper/internal/snapstest"
 )
 
@@ -16,6 +17,8 @@ func TestMain(m *testing.M) {
 }
 
 func TestScripts(t *testing.T) {
+	q := queuetest.New(t)
+	q.Run(t, false)
 	testscript.Run(t, testscript.Params{
 		Dir:                 "testdata",
 		UpdateScripts:       snapstest.UpdateScripts(),
@@ -23,7 +26,8 @@ func TestScripts(t *testing.T) {
 		Setup: func(env *testscript.Env) error {
 			serialScripts.Lock()
 			env.Defer(serialScripts.Unlock)
-			env.Vars = append(env.Vars, "GORACE=atexit_sleep_ms=0")
+			env.Vars = append(env.Vars, "GORACE=atexit_sleep_ms=0", "TEST_QUEUE="+q.Admin.Queue, "TEST_QUEUE_CA="+q.Admin.QueueCA,
+				"TEST_QUEUE_USER="+q.Admin.QueueUser, "TEST_QUEUE_PASSWORD="+q.Admin.QueuePass)
 			return nil
 		},
 	})

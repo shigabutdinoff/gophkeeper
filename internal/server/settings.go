@@ -1,6 +1,10 @@
 package server
 
-import "io"
+import (
+	"io"
+
+	"github.com/nats-io/nats.go/jetstream"
+)
 
 // Settings задаёт сертификат сервера, ключи проекта и хранение входа.
 type Settings struct {
@@ -12,4 +16,8 @@ type Settings struct {
 	TokenKey, Database string
 	// Log получает строки о внутренних ошибках чтения записей.
 	Log io.Writer
+	// Queue подключает сервер к очереди, где лежит корзина файлов.
+	Queue jetstream.JetStream
+	// FilesLimit задаёт предел объёма корзины файлов в байтах.
+	FilesLimit int64
 }

@@ -34,7 +34,7 @@ func serve(cmd *cobra.Command, _ []string) error {
 	}
 	defer closeStop()
 	var served errgroup.Group
-	served.Go(func() error { return own(ctx) })
+	served.Go(func() error { return own(ctx, s) })
 	done, err := runWorker(ctx, s, p.state, seed)
 	if err != nil {
 		return err

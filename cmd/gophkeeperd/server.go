@@ -18,6 +18,7 @@ func serverCmd() *cobra.Command {
 		Short: "Принимать запросы клиентов по защищённому соединению",
 		Long: "Принимает запросы клиентов по защищённому соединению и отказывает запросам без ключа проекта.\n" +
 			"Регистрирует пользователей и выполняет вход, учётные записи хранит в базе данных и сам создаёт в ней таблицы.\n" +
+			"Файлы записей хранит в своей корзине очереди с пределом объёма files-limit.\n" +
 			"Соединение без целого запроса закрывает через 30 секунд, при остановке сначала отвечает на начатые запросы.",
 		Args: cli.NoArgs,
 	}
@@ -30,6 +31,11 @@ func serverCmd() *cobra.Command {
 		if s.Cert == "" || s.Key == "" {
 			return server.ErrNoCert
 		}
+		js, limit, err := filesQueue(s)
+		if err != nil {
+			return err
+		}
+		defer js.Conn().Close()
 		l, err := net.Listen("tcp", s.Address)
 		if err != nil {
 			return fmt.Errorf("адрес %s не открыт: %w", s.Address, err)
@@ -38,7 +44,7 @@ func serverCmd() *cobra.Command {
 		ctx, stop := signal.NotifyContext(c.Context(), syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 		defer stop()
 		return server.Serve(ctx, l, server.Settings{Cert: s.Cert, Key: s.Key, AppKey: s.AppKey, ServerKey: s.ServerKey,
-			TokenKey: s.TokenKey, Database: s.Database, Log: c.ErrOrStderr()})
+			TokenKey: s.TokenKey, Database: s.Database, Log: c.ErrOrStderr(), Queue: js, FilesLimit: limit})
 	}
 	return cmd
 }

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/nats-io/nats.go/jetstream"
 	"github.com/pressly/goose/v3"
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
@@ -15,11 +16,12 @@ import (
 )
 
 type auth struct {
-	db   *gorm.DB
-	key  *ecdsa.PrivateKey
-	kid  string
-	keys []byte
-	log  *logrus.Logger
+	db    *gorm.DB
+	key   *ecdsa.PrivateKey
+	kid   string
+	keys  []byte
+	log   *logrus.Logger
+	files jetstream.ObjectStore
 }
 
 func open(ctx context.Context, s Settings) (*auth, error) {
