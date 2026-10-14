@@ -53,7 +53,7 @@ func TestRunRetriesServer(t *testing.T) {
 		case 3:
 			w.WriteHeader(http.StatusNoContent)
 		case 4:
-			conn, _, err := http.NewResponseController(w).Hijack()
+			conn, _, err := w.(http.Hijacker).Hijack()
 			require.NoError(t, err, "соединение не перехвачено")
 			require.NoError(t, conn.Close(), "соединение не закрыто")
 		case 5:
