@@ -21,18 +21,14 @@ var (
 	ErrNotFound = errors.New("запись не найдена")
 )
 
-var codes = map[string]error{
-	"user_already_exists":        ErrExists,
-	"invalid_credentials":        ErrCredentials,
-	"refresh_token_not_found":    ErrLoggedOut,
-	"refresh_token_already_used": ErrLoggedOut,
-	"session_expired":            ErrLoggedOut,
-	"session_not_found":          ErrLoggedOut,
-}
-
 func failure(code string) error {
-	if err, ok := codes[code]; ok {
-		return err
+	switch code {
+	case "user_already_exists":
+		return ErrExists
+	case "invalid_credentials":
+		return ErrCredentials
+	case "refresh_token_not_found", "refresh_token_already_used", "session_expired", "session_not_found":
+		return ErrLoggedOut
 	}
 	return ErrServer
 }

@@ -35,7 +35,7 @@ func freeAddr(t *testing.T) string {
 	t.Helper()
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err, "порт не занят")
-	defer l.Close()
+	defer func() { _ = l.Close() }()
 	return l.Addr().String()
 }
 
@@ -76,11 +76,11 @@ func serverEnv(t *testing.T) *http.Client {
 	}
 	conn, err := pgx.Connect(context.Background(), base)
 	require.NoError(t, err, "база не открыта")
-	t.Cleanup(func() { conn.Close(context.Background()) })
+	t.Cleanup(func() { _ = conn.Close(context.Background()) })
 	schema := "t_" + strings.ToLower(rand.Text())
 	_, err = conn.Exec(context.Background(), "CREATE SCHEMA "+schema)
 	require.NoError(t, err, "схема не создана")
-	t.Cleanup(func() { conn.Exec(context.Background(), "DROP SCHEMA "+schema+" CASCADE") })
+	t.Cleanup(func() { _, _ = conn.Exec(context.Background(), "DROP SCHEMA "+schema+" CASCADE") })
 	u, err := url.Parse(base)
 	require.NoError(t, err, "адрес базы не разобран")
 	q := u.Query()
@@ -91,7 +91,7 @@ func serverEnv(t *testing.T) *http.Client {
 
 func startServer(ctx context.Context, args ...string) <-chan error {
 	var out, errOut strings.Builder
-	root := newRoot(&out, &errOut)
+	root := newRoot(&out, &errOut, http.DefaultClient)
 	root.SetArgs(append([]string{"server"}, args...))
 	done := make(chan error, 1)
 	go func() { done <- root.ExecuteContext(ctx) }()
@@ -108,7 +108,7 @@ func answers(t *testing.T, client *http.Client, addr string) {
 		if err != nil {
 			return false
 		}
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return resp.StatusCode == http.StatusNotFound && resp.TLS != nil
 	}, 5*time.Second, 10*time.Millisecond, "сервер не отвечает по защищённому соединению на %s", addr)
 }
@@ -139,7 +139,7 @@ func TestServerBusy(t *testing.T) {
 	serverEnv(t)
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err, "порт не занят")
-	defer l.Close()
+	defer func() { _ = l.Close() }()
 	err = <-startServer(t.Context(), "--address", l.Addr().String())
 	require.Error(t, err, "сервер запустился на занятом адресе")
 	assert.ErrorContains(t, err, "адрес "+l.Addr().String()+" не открыт: ", "ошибка не называет адрес")
@@ -153,7 +153,7 @@ func TestServerStartRefused(t *testing.T) {
 	assert.NotContains(t, err.Error(), "s3cret", "секрет из настроек попал в ошибку")
 	l, err := net.Listen("tcp", addr)
 	require.NoError(t, err, "адрес остался занят после отказа запуска")
-	l.Close()
+	_ = l.Close()
 	t.Setenv("GOPHKEEPER_TOKEN_KEY", filepath.Join(t.TempDir(), "token-s3cret.pem"))
 	err = <-startServer(t.Context(), "--address", addr)
 	require.ErrorContains(t, err, "ключ подписи токенов не прочитан: ", "сервер запустился без файла ключа подписи")
@@ -172,7 +172,7 @@ func TestServerPoolSettingsRefused(t *testing.T) {
 	assert.NotContains(t, err.Error(), ":"+password+"@", "пароль базы попал в ошибку")
 	l, err := net.Listen("tcp", addr)
 	require.NoError(t, err, "адрес остался занят после отказа запуска")
-	l.Close()
+	_ = l.Close()
 }
 
 func TestServerSignals(t *testing.T) {
@@ -231,7 +231,7 @@ func TestServerLog(t *testing.T) {
 	client := serverEnv(t)
 	out, err := os.Create(filepath.Join(t.TempDir(), "stderr"))
 	require.NoError(t, err, "файл вывода не создан")
-	root := newRoot(io.Discard, out)
+	root := newRoot(io.Discard, out, http.DefaultClient)
 	addr := freeAddr(t)
 	root.SetArgs([]string{"server", "--address", addr})
 	ctx, cancel := context.WithCancel(context.Background())
@@ -247,10 +247,10 @@ func TestServerLog(t *testing.T) {
 		Access string `json:"access_token"`
 	}
 	require.NoError(t, json.NewDecoder(resp.Body).Decode(&s), "ответ регистрации не прочитан")
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	conn, err := pgx.Connect(context.Background(), os.Getenv("GOPHKEEPER_DATABASE"))
 	require.NoError(t, err, "база не открыта")
-	defer conn.Close(context.Background())
+	defer func() { _ = conn.Close(context.Background()) }()
 	_, err = conn.Exec(context.Background(), "ALTER TABLE records RENAME TO records_off")
 	require.NoError(t, err, "таблица не переименована")
 	req, err = http.NewRequest(http.MethodGet, "https://"+addr+"/rest/v1/records", nil)
@@ -258,7 +258,7 @@ func TestServerLog(t *testing.T) {
 	req.Header = http.Header{"Apikey": {"app-key"}, "Authorization": {"Bearer " + s.Access}}
 	resp, err = client.Do(req)
 	require.NoError(t, err, "сервер не ответил")
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode, "сбой чтения не получил общий отказ")
 	cancel()
 	require.NoError(t, <-done, "сервер остановился с ошибкой")

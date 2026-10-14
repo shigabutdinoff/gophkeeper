@@ -50,7 +50,7 @@ func TestBackend(t *testing.T) {
 	assert.NotEqual(t, app, service, "ключи проекта совпали")
 	c, cert, err = backend(state)
 	require.NoError(t, err, "режим своего сервера не прочитан из каталога состояния")
-	assert.Equal(t, []string{"https://" + ownAddr, string(app), string(service), filepath.Join(state, caFile)},
+	assert.Equal(t, []string{"https://" + ownAddr(), string(app), string(service), filepath.Join(state, caFile)},
 		[]string{string(c.Supabase.URL), c.Supabase.Key, c.ServiceKey, cert}, "режим своего сервера взят не из каталога состояния")
 	require.NoError(t, os.Remove(filepath.Join(state, appKeyFile)), "ключ приложения не удалён")
 	_, _, err = backend(state)
@@ -114,7 +114,7 @@ func TestOwnServer(t *testing.T) {
 	own, err := ownServer(state)
 	require.NoError(t, err, "адрес своего сервера не открыт")
 	_, err = ownServer(state)
-	assert.ErrorContains(t, err, "адрес своего сервера "+ownAddr+" не открыт: ", "занятый адрес открыт повторно")
+	assert.ErrorContains(t, err, "адрес своего сервера "+ownAddr()+" не открыт: ", "занятый адрес открыт повторно")
 	opts, _, err := serverOptions(state, server.RANDOM_PORT, server.RANDOM_PORT)
 	require.NoError(t, err, "настройки очереди песочницы не собраны")
 	opts.NoSigs = true
@@ -132,18 +132,18 @@ func TestOwnServer(t *testing.T) {
 	req.Header.Set("apikey", c.ServiceKey)
 	resp, err := client.Do(req)
 	if err == nil {
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	}
 	require.Error(t, err, "клиент без доверия центру песочницы получил ответ")
 	require.NoError(t, account.Trust(client, cert), "центр песочницы не принят")
 	resp, err = client.Do(req)
 	require.NoError(t, err, "свой сервер не ответил обработчику")
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode, "служебный ключ не принят")
 	resp, err = client.Get(string(c.Supabase.URL) + "/auth/v1/.well-known/jwks.json")
 	require.NoError(t, err, "свой сервер не отдал ключи")
 	keys, err := io.ReadAll(resp.Body)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	require.NoError(t, err, "ключи не прочитаны")
 	assert.Contains(t, string(keys), `"alg":"ES256"`, "ключ подписи токенов песочницы не принят сервером")
 	admin, err := sandboxUser(state, adminUser)

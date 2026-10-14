@@ -1,0 +1,40 @@
+version: "2"
+linters:
+  default: none
+  enable:
+    - bodyclose
+    - errcheck
+    - forbidigo
+    - gochecknoglobals
+    - gocritic
+    - revive
+    - unused
+  settings:
+    forbidigo:
+      forbid:
+        - pattern: ^os\.Exit$
+        - pattern: ^panic$
+    gocritic:
+      disable-all: true
+      enabled-checks:
+        - commentedOutCode
+    revive:
+      rules:
+        - name: package-comments
+        - name: exported
+        - name: deep-exit
+  exclusions:
+    rules:
+      - path: ^cmd/gophkeeper/main\.go$
+        linters: [gochecknoglobals]
+        text: ^build
+      - path: ^cmd/gophkeeper/main\.go$
+        linters: [forbidigo]
+        source: os\.Exit\(interruptCode\)
+      - path: ^internal/cli/(form|prompt|server)\.go$
+        linters: [gochecknoglobals]
+        text: ^(runForm|isTerminal|httpClient) is a global variable
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  uniq-by-line: false

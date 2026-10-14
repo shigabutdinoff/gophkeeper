@@ -8,7 +8,7 @@ import (
 )
 
 func FuzzFormat(f *testing.F) {
-	for _, tc := range formatCases {
+	for _, tc := range formatCases() {
 		f.Add(tc.version, uint16(tc.count))
 	}
 	number := regexp.MustCompile(`^\d+[A-Z](\d+|5\d{3,}[a-z])$`)

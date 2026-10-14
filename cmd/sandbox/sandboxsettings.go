@@ -17,12 +17,6 @@ const (
 	sandboxName = "sandbox"
 )
 
-var (
-	sandboxPort     = 54222
-	sandboxQueue    = "tls://" + net.JoinHostPort(sandboxHost, strconv.Itoa(sandboxPort))
-	sandboxLeafPort = 54223
-)
-
 func sandboxSettings(state string) ([]byte, error) {
 	c, cert, err := backend(state)
 	if err != nil {
@@ -33,7 +27,7 @@ func sandboxSettings(state string) ([]byte, error) {
 		return nil, fmt.Errorf("CA песочницы: %w", err)
 	}
 	data, err := yaml.Marshal(config.Settings{Server: string(c.Supabase.URL), AppKey: c.Supabase.Key, Region: c.Supabase.Region,
-		Queue: sandboxQueue, QueueLeaf: "tls://" + net.JoinHostPort(sandboxHost, strconv.Itoa(sandboxLeafPort)), QueueCA: string(ca), ServerCert: cert})
+		Queue: sandboxQueue(), QueueLeaf: "tls://" + net.JoinHostPort(sandboxHost, strconv.Itoa(leafPort())), QueueCA: string(ca), ServerCert: cert})
 	if err != nil {
 		return nil, fmt.Errorf("разметка настроек песочницы: %w", err)
 	}

@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"os"
+	"log"
 	"sync"
 	"testing"
 	"time"
@@ -26,14 +26,9 @@ const (
 )
 
 func TestMain(m *testing.M) {
-	maxDelay, heartbeat = 10*time.Millisecond, 100*time.Millisecond
-	os.Exit(snapstest.CleanM{M: m}.Run())
-}
-
-func setVar[T any](t *testing.T, v *T, value T) {
-	old := *v
-	*v = value
-	t.Cleanup(func() { *v = old })
+	if (snapstest.CleanM{M: m}).Run() != 0 {
+		log.Fatal("тесты пакета или снапшоты не прошли проверку")
+	}
 }
 
 func b64(s string) string {
@@ -81,7 +76,7 @@ func run(t *testing.T, js jetstream.JetStream, s Server) func() error {
 	done := make(chan error, 1)
 	go func() { done <- Run(ctx, js, s) }()
 	stop := sync.OnceValue(func() error { cancel(); return <-done })
-	t.Cleanup(func() { stop() })
+	t.Cleanup(func() { _ = stop() })
 	return stop
 }
 

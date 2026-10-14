@@ -11,7 +11,7 @@ import (
 	"github.com/avast/retry-go/v5"
 )
 
-var leafWait = 3 * time.Second
+const leafWait = 3 * time.Second
 
 var errNoLeaf = errors.New("очередь устройства не связана с очередью изменений")
 

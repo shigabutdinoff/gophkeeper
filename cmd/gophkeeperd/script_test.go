@@ -10,13 +10,12 @@ import (
 	"github.com/shigabutdinoff/gophkeeper/internal/snapstest"
 )
 
-var serialScripts sync.Mutex
-
 func TestMain(m *testing.M) {
 	testscript.Main(snapstest.CleanM{M: m}, map[string]func(){"gophkeeperd": main})
 }
 
 func TestScripts(t *testing.T) {
+	var serialScripts sync.Mutex
 	q := queuetest.New(t)
 	q.Run(t, false)
 	testscript.Run(t, testscript.Params{

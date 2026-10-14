@@ -43,14 +43,14 @@ func startPostgrest(t *testing.T, reply func(n int32, w http.ResponseWriter, r *
 }
 
 func records(body string) func(int32, http.ResponseWriter, *http.Request) {
-	return func(_ int32, w http.ResponseWriter, _ *http.Request) { w.Write([]byte(body)) }
+	return func(_ int32, w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte(body)) }
 }
 
 func TestList(t *testing.T) {
 	var query, apikey, bearer string
 	p := startPostgrest(t, func(_ int32, w http.ResponseWriter, r *http.Request) {
 		query, apikey, bearer = r.URL.Path+"?"+r.URL.RawQuery, r.Header.Get("apikey"), r.Header.Get("Authorization")
-		w.Write([]byte(`[{"id":"1","note":"почта"},{"id":"2","note":""},{"id":"3","note":"банк"}]`))
+		_, _ = w.Write([]byte(`[{"id":"1","note":"почта"},{"id":"2","note":""},{"id":"3","note":"банк"}]`))
 	})
 	list, err := List(t.Context(), p.client, p.settings, "доступ")
 	require.NoError(t, err, "список не получен")
@@ -64,7 +64,7 @@ func TestFind(t *testing.T) {
 	var query string
 	p := startPostgrest(t, func(_ int32, w http.ResponseWriter, r *http.Request) {
 		query = r.URL.RawQuery
-		w.Write([]byte(`[{"id":"` + annaRecord + `","note":"почта","secret":"c2VrcmV0"}]`))
+		_, _ = w.Write([]byte(`[{"id":"` + annaRecord + `","note":"почта","secret":"c2VrcmV0"}]`))
 	})
 	e, err := Find(t.Context(), p.client, p.settings, "доступ", annaRecord)
 	require.NoError(t, err, "запись не получена")
@@ -88,7 +88,7 @@ func TestListRetriesBusyServer(t *testing.T) {
 				w.WriteHeader(status)
 				return
 			}
-			w.Write([]byte(`[{"id":"1"}]`))
+			_, _ = w.Write([]byte(`[{"id":"1"}]`))
 		})
 		list, err := List(t.Context(), p.client, p.settings, "доступ")
 		require.NoError(t, err, "ответ %d не повторён", status)
@@ -107,7 +107,7 @@ func TestListBusyForever(t *testing.T) {
 func TestListHidesServerDetails(t *testing.T) {
 	p := startPostgrest(t, func(_ int32, w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"code":"secret-detail","message":"secret-detail"}`))
+		_, _ = w.Write([]byte(`{"code":"secret-detail","message":"secret-detail"}`))
 	})
 	_, err := List(t.Context(), p.client, p.settings, "доступ")
 	require.ErrorIs(t, err, ErrServer, "незнакомая ошибка не дала ошибку сервера")

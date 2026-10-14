@@ -62,7 +62,7 @@ func TestLiveBuckets(t *testing.T) {
 	stop, err := access.Serve(t.Context(), admin, seed, cmp.Or(claims.IssuerAccount, claims.Issuer), server, http.DefaultClient,
 		logger.NewStdLogger(true, false, false, false, false))
 	require.NoError(t, err, "служба доступа не запущена")
-	t.Cleanup(func() { stop() })
+	t.Cleanup(func() { _ = stop() })
 	js, err := jetstream.New(admin)
 	require.NoError(t, err, "JetStream недоступен")
 	for _, name := range []string{"anna", "boris", "carol", "dave"} {

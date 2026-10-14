@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/shigabutdinoff/gophkeeper/internal/access"
 	"github.com/shigabutdinoff/gophkeeper/internal/queuetest"
 	"github.com/shigabutdinoff/gophkeeper/internal/record"
 )
@@ -116,7 +115,6 @@ func TestBucketOwnerOnly(t *testing.T) {
 }
 
 func TestSweep(t *testing.T) {
-	access.SetIdle(t, 300*time.Millisecond)
 	q := queuetest.New(t)
 	js, _ := q.Start(t, false)
 	first, _ := device(t, q, anna)
@@ -174,7 +172,6 @@ func TestOpenRepliesOnlyToOwnerInbox(t *testing.T) {
 }
 
 func TestSweepKeepsReopenedBucket(t *testing.T) {
-	access.SetIdle(t, 300*time.Millisecond)
 	q := queuetest.New(t)
 	js, _ := q.Start(t, false)
 	first, _ := device(t, q, anna)

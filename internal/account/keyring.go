@@ -10,8 +10,6 @@ import (
 
 const service, user = "gophkeeper", "session"
 
-var set = keyring.Set
-
 type record struct {
 	Server  string `json:"server"`
 	Email   string `json:"email"`
@@ -23,12 +21,12 @@ type record struct {
 	Cert    string `json:"server_cert"`
 }
 
-func keep(r record) error {
+func keep(r record, set func(service, user, password string) error) error {
 	data, err := json.Marshal(r)
 	if err != nil {
 		return fmt.Errorf("запись входа: %w", err)
 	}
-	if err = retry.New(retry.Attempts(3), retry.Delay(retryWait), retry.DelayType(retry.FixedDelay), retry.LastErrorOnly(true)).Do(func() error { return set(service, user, string(data)) }); err != nil {
+	if err = retry.New(retry.Attempts(3), retry.Delay(retryWait()), retry.DelayType(retry.FixedDelay), retry.LastErrorOnly(true)).Do(func() error { return set(service, user, string(data)) }); err != nil {
 		return fmt.Errorf("хранилище секретов: %w", err)
 	}
 	return nil

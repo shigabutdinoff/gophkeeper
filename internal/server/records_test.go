@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/json"
-	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -178,8 +177,7 @@ func TestRecordsUpgrade(t *testing.T) {
 func TestRecordsLogged(t *testing.T) {
 	out, err := os.Create(filepath.Join(t.TempDir(), "log"))
 	require.NoError(t, err, "файл журнала не создан")
-	set(t, &serverLog, io.Writer(out))
-	r := start(t)
+	r := start(t, func(s *Settings) { s.Log = out })
 	email, password := newEmail(), rand.Text()
 	status, body := r.signup(t, email, password)
 	require.Equal(t, http.StatusOK, status, "регистрация отклонена: %s", body)

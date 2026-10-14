@@ -20,7 +20,7 @@ func (r *running) logout(t *testing.T, query, token string) (int, string) {
 	req.Header.Set("Authorization", "Bearer "+token)
 	resp, err := r.client().Do(req)
 	require.NoError(t, err, "сервер не ответил")
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	got, err := io.ReadAll(resp.Body)
 	require.NoError(t, err, "ответ не прочитан")
 	return resp.StatusCode, string(got)

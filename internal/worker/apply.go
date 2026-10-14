@@ -12,18 +12,16 @@ import (
 	"github.com/shigabutdinoff/gophkeeper/internal/record"
 )
 
-var (
-	attempt     = 5 * time.Second
-	fileAttempt = 5 * time.Minute
-	errSkipped  = errors.New("изменение пропущено")
-)
+const fileAttempt = 5 * time.Minute
+
+var errSkipped = errors.New("изменение пропущено")
 
 func apply(ctx context.Context, js jetstream.JetStream, msg jetstream.Msg, s Server, c record.Change) error {
 	obs, err := transfer(ctx, js, msg, s, c)
 	if err != nil {
 		return err
 	}
-	ctx, cancel := context.WithTimeout(ctx, attempt)
+	ctx, cancel := context.WithTimeout(ctx, s.tuned().attempt)
 	defer cancel()
 	owned := map[string]string{"user_id": "eq." + c.Owner, "id": "eq." + c.Record}
 	fields := map[string]any{"id": c.Record, "user_id": c.Owner, "note": c.Note, "secret": c.Secret, "updated_at": "now"}

@@ -5,6 +5,8 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/zalando/go-keyring"
+
 	"github.com/shigabutdinoff/gophkeeper/internal/config"
 )
 
@@ -29,7 +31,7 @@ func Unlock(ctx context.Context, client *http.Client, s config.Settings,
 		return Secrets{}, err
 	case err == nil:
 		r.Refresh, r.Access, r.User = t.Refresh, t.Access, t.User.ID
-		if err = keep(r); err != nil {
+		if err = keep(r, keyring.Set); err != nil {
 			return Secrets{}, err
 		}
 	}

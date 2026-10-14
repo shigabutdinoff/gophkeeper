@@ -31,7 +31,7 @@ func (c *Client) Get(ctx context.Context, owner, id string, limit int64) ([]byte
 	if err != nil {
 		return nil, err
 	}
-	defer out.Body.Close()
+	defer func() { _ = out.Body.Close() }()
 	data, err := io.ReadAll(io.LimitReader(out.Body, limit+1))
 	if err == nil && int64(len(data)) > limit {
 		err = errors.New("объект файла больше предела размера")

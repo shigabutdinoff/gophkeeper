@@ -3,6 +3,7 @@ package queue
 import (
 	"context"
 	"errors"
+	"testing"
 	"time"
 
 	"github.com/avast/retry-go/v5"
@@ -12,7 +13,12 @@ import (
 	"github.com/shigabutdinoff/gophkeeper/internal/config"
 )
 
-var attempt = 2 * time.Second
+func attempt() time.Duration {
+	if testing.Testing() {
+		return 200 * time.Millisecond
+	}
+	return 2 * time.Second
+}
 
 func publish(ctx context.Context, nc *nats.Conn, msg *nats.Msg) error {
 	js, err := jetstream.New(nc)
@@ -22,7 +28,7 @@ func publish(ctx context.Context, nc *nats.Conn, msg *nats.Msg) error {
 	return retry.New(retry.Context(ctx), retry.UntilSucceeded(), retry.DelayType(retry.FixedDelay),
 		retry.RetryIf(func(err error) bool { return !errors.Is(err, nats.ErrConnectionClosed) }),
 	).Do(func() error {
-		try, cancel := context.WithTimeout(ctx, attempt)
+		try, cancel := context.WithTimeout(ctx, attempt())
 		defer cancel()
 		_, err := js.PublishMsg(try, msg)
 		return err

@@ -30,8 +30,8 @@ func TestAddFileGrownPastLimit(t *testing.T) {
 		require.NoError(t, syscall.Mkfifo(path, 0o600), "растущий файл не создан")
 		go func() {
 			if w, werr := os.OpenFile(path, os.O_WRONLY, 0); werr == nil {
-				w.Write(make([]byte, record.MaxFile+1))
-				w.Close()
+				_, _ = w.Write(make([]byte, record.MaxFile+1))
+				_ = w.Close()
 			}
 		}()
 		return err

@@ -31,9 +31,8 @@ type running struct {
 	stop                context.CancelFunc
 	done                chan struct{}
 	err                 error
+	tune                []func(*Settings)
 }
-
-var serverLog io.Writer
 
 func set[T any](t *testing.T, p *T, v T) {
 	t.Helper()
@@ -59,17 +58,21 @@ func certFiles(t *testing.T) (certFile, keyFile string, pool *x509.CertPool) {
 	return certFile, keyFile, pool
 }
 
-func start(t *testing.T) *running {
+func start(t *testing.T, tune ...func(*Settings)) *running {
 	t.Helper()
-	return startOn(t, database(t), tokenKey(t))
+	return startOn(t, database(t), tokenKey(t), tune...)
 }
 
-func startOn(t *testing.T, dsn, tokenKey string) *running {
+func testPauses() []time.Duration {
+	return []time.Duration{300 * time.Millisecond, 600 * time.Millisecond}
+}
+
+func startOn(t *testing.T, dsn, tokenKey string, tune ...func(*Settings)) *running {
 	t.Helper()
 	cert, key, pool := certFiles(t)
 	q := queuetest.New(t)
 	js, _ := q.Run(t, false)
-	r := &running{addr: "127.0.0.1:0", dsn: dsn, cert: cert, key: key, tokenKey: tokenKey, pool: pool, q: q, js: js, limit: 1 << 30}
+	r := &running{addr: "127.0.0.1:0", dsn: dsn, cert: cert, key: key, tokenKey: tokenKey, pool: pool, q: q, js: js, limit: 1 << 30, tune: tune}
 	r.serve(t)
 	return r
 }
@@ -83,8 +86,12 @@ func (r *running) serve(t *testing.T) {
 	r.addr, r.stop, r.done = l.Addr().String(), cancel, done
 	go func() {
 		defer close(done)
-		r.err = Serve(ctx, l, Settings{Cert: r.cert, Key: r.key, AppKey: "app-key", ServerKey: "service-key", TokenKey: r.tokenKey, Database: r.dsn, Log: serverLog,
-			Queue: r.js, FilesLimit: r.limit})
+		s := Settings{Cert: r.cert, Key: r.key, AppKey: "app-key", ServerKey: "service-key", TokenKey: r.tokenKey, Database: r.dsn,
+			Queue: r.js, FilesLimit: r.limit, pauses: testPauses()}
+		for _, tune := range r.tune {
+			tune(&s)
+		}
+		r.err = Serve(ctx, l, s)
 	}()
 	t.Cleanup(func() { cancel(); <-done })
 }
@@ -118,7 +125,7 @@ func (r *running) get(t *testing.T, path string, header http.Header) reply {
 	req.Header = header
 	resp, err := r.client().Do(req)
 	require.NoError(t, err, "сервер не ответил")
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err, "ответ не прочитан")
 	return reply{resp.StatusCode, resp.Header.Get("Content-Type"), resp.Proto, resp.TLS != nil, string(body)}
@@ -128,12 +135,12 @@ func (r *running) dial(t *testing.T) *tls.Conn {
 	t.Helper()
 	conn, err := tls.Dial("tcp", r.addr, &tls.Config{RootCAs: r.pool})
 	require.NoError(t, err, "защищённое соединение не установлено")
-	t.Cleanup(func() { conn.Close() })
+	t.Cleanup(func() { _ = conn.Close() })
 	return conn
 }
 
 func drip(conn net.Conn, head, slow string) {
-	io.WriteString(conn, head)
+	_, _ = io.WriteString(conn, head)
 	for i := range len(slow) {
 		if _, err := io.WriteString(conn, slow[i:i+1]); err != nil {
 			return

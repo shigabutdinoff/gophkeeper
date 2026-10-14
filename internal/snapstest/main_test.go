@@ -1,10 +1,12 @@
 package snapstest
 
 import (
-	"os"
+	"log"
 	"testing"
 )
 
 func TestMain(m *testing.M) {
-	os.Exit(CleanM{m}.Run())
+	if (CleanM{m}).Run() != 0 {
+		log.Fatal("тесты пакета или снапшоты не прошли проверку")
+	}
 }

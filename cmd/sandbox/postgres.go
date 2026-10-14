@@ -20,7 +20,7 @@ func enter(ctx context.Context, state string, own bool) error {
 		return err
 	}
 	if err = compose(ctx, "up", "--detach", "--wait"); err != nil {
-		compose(ctx, "down")
+		_ = compose(ctx, "down")
 	}
 	return err
 }

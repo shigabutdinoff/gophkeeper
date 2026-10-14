@@ -2,6 +2,8 @@ package server
 
 import (
 	"io"
+	"net/http"
+	"time"
 
 	"github.com/nats-io/nats.go/jetstream"
 )
@@ -20,4 +22,8 @@ type Settings struct {
 	Queue jetstream.JetStream
 	// FilesLimit задаёт предел объёма корзины файлов в байтах.
 	FilesLimit int64
+
+	readTimeout, grace time.Duration
+	operations         http.Handler
+	pauses             []time.Duration
 }

@@ -174,7 +174,7 @@ func TestTooLargeNotQueued(t *testing.T) {
 }
 
 func TestEditCard(t *testing.T) {
-	rec := sealedAs(t, card, "Сбербанк, зарплатная")
+	rec := sealedAs(t, card(), "Сбербанк, зарплатная")
 	_, stream := withQueue(t, replyJSON(t, []stored{rec}))
 	typing(t, "", "01/30", "", "")
 	_, _, err := executeIn(input(t, ""), "edit", rec.ID)
@@ -187,12 +187,12 @@ func TestEditCard(t *testing.T) {
 }
 
 func TestEditText(t *testing.T) {
-	rec := sealedAs(t, codes, "GitHub")
+	rec := sealedAs(t, codes(), "GitHub")
 	_, stream := withQueue(t, replyJSON(t, []stored{rec}))
 	keyboard(t, false)
 	_, _, err := executeIn(input(t, ""), "edit", rec.ID)
 	require.NoError(t, err, "правка текста не принята")
-	assert.Equal(t, codes, secretOf(t, lastChange(t, stream)), "прежний текст не сохранён")
+	assert.Equal(t, codes(), secretOf(t, lastChange(t, stream)), "прежний текст не сохранён")
 	_, _, err = executeIn(input(t, "новый\n"), "edit", rec.ID, "--note", "")
 	require.NoError(t, err, "новый текст не принят")
 	c := lastChange(t, stream)

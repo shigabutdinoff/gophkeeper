@@ -16,10 +16,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var cloudVars = []string{supabaseURL, supabaseKey, "SUPABASE_REGION", adminCreds, clientCreds}
+func cloudVars() []string {
+	return []string{supabaseURL, supabaseKey, "SUPABASE_REGION", adminCreds, clientCreds}
+}
 
 func clearCloudEnv(t *testing.T) {
-	for _, k := range cloudVars {
+	for _, k := range cloudVars() {
 		t.Setenv(k, "")
 	}
 }

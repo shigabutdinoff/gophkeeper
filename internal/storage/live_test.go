@@ -55,7 +55,7 @@ func TestLive(t *testing.T) {
 	assert.Error(t, err, "чужой объект прочитан")
 	assert.Error(t, stranger.Put(t.Context(), boris.User.ID, record, data), "пользователь записал объект сам")
 	assert.Error(t, stranger.Put(t.Context(), anna.User.ID, record, []byte("подмена")), "пользователь подменил чужой объект")
-	stranger.Delete(t.Context(), anna.User.ID, record)
+	_ = stranger.Delete(t.Context(), anna.User.ID, record)
 	_, err = admin.Get(t.Context(), anna.User.ID, record, 100)
 	assert.NoError(t, err, "пользователь удалил чужой объект")
 	require.NoError(t, admin.Delete(t.Context(), anna.User.ID, record), "служебный ключ не удалил объект")

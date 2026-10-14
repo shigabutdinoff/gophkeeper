@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"slices"
-	"sync"
 	"testing"
 
 	"github.com/getkin/kin-openapi/openapi2"
@@ -23,7 +22,7 @@ import (
 	"github.com/shigabutdinoff/gophkeeper/api"
 )
 
-var described = sync.OnceValues(func() (*openapi3.T, error) {
+func described() (*openapi3.T, error) {
 	var v2 openapi2.T
 	if err := json.Unmarshal(api.Swagger, &v2); err != nil {
 		return nil, err
@@ -34,15 +33,15 @@ var described = sync.OnceValues(func() (*openapi3.T, error) {
 	}
 	doc.Servers = nil
 	return doc, doc.Validate(context.Background())
-})
+}
 
-var router = sync.OnceValues(func() (routers.Router, error) {
+func router() (routers.Router, error) {
 	doc, err := described()
 	if err != nil {
 		return nil, err
 	}
 	return gorillamux.NewRouter(doc)
-})
+}
 
 type checked struct{ base http.RoundTripper }
 
@@ -60,7 +59,7 @@ func (c checked) RoundTrip(req *http.Request) (*http.Response, error) {
 		return resp, nil
 	}
 	body, err := io.ReadAll(resp.Body)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	resp.Body = io.NopCloser(bytes.NewReader(body))
 	if err != nil {
 		return resp, err
@@ -91,7 +90,7 @@ func TestSwaggerServed(t *testing.T) {
 	t.Cleanup(srv.Close)
 	resp, err := srv.Client().Get(srv.URL + "/swagger/doc.json")
 	require.NoError(t, err, "сервер не ответил")
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err, "ответ не прочитан")
 	require.Equal(t, http.StatusOK, resp.StatusCode, "описание отдаётся без ключа проекта")
@@ -105,8 +104,12 @@ func TestSwaggerChecksResponses(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 	client := &http.Client{Transport: checked{srv.Client().Transport}}
-	_, err := client.Get(srv.URL + "/rest/v1/records")
+	resp, err := client.Get(srv.URL + "/rest/v1/records")
+	if err == nil {
+		_ = resp.Body.Close()
+	}
 	require.ErrorContains(t, err, "response body doesn't match schema", "ответ не по описанию не прошёл")
-	_, err = client.Get(srv.URL + "/swagger/doc.json")
+	resp, err = client.Get(srv.URL + "/swagger/doc.json")
 	require.NoError(t, err, "адрес вне описания не проверяется")
+	_ = resp.Body.Close()
 }

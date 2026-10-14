@@ -14,7 +14,7 @@ func load(path string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("файл %s не найден", path)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	data, err := io.ReadAll(io.LimitReader(f, record.MaxFile+1))
 	switch {
 	case err != nil:

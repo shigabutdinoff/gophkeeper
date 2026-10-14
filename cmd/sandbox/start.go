@@ -24,7 +24,7 @@ func start(ctx context.Context, state string, q queueAccess) error {
 	if err != nil {
 		return fmt.Errorf("журнал песочницы: %w", err)
 	}
-	defer log.Close()
+	defer func() { _ = log.Close() }()
 	cmd := &exec.Cmd{Path: exe, Args: []string{os.Args[0], "serve"}, Stdout: log, Stderr: log, SysProcAttr: detached()}
 	if err = cmd.Start(); err != nil {
 		return fmt.Errorf("запуск очереди песочницы: %w", err)

@@ -33,7 +33,7 @@ func (o *outage) cut(d time.Duration) {
 	defer o.mu.Unlock()
 	o.until = time.Now().Add(d)
 	for _, c := range o.open {
-		c.Close()
+		_ = c.Close()
 	}
 	o.open = nil
 }
@@ -44,15 +44,15 @@ func (o *outage) pipe(c net.Conn, target string) {
 	o.mu.Unlock()
 	s, err := net.Dial("tcp", target)
 	if down || err != nil {
-		c.Close()
+		_ = c.Close()
 		return
 	}
 	o.mu.Lock()
 	o.open = append(o.open, c, s)
 	o.mu.Unlock()
-	go func() { io.Copy(s, c); s.Close() }()
-	io.Copy(c, s)
-	c.Close()
+	go func() { _, _ = io.Copy(s, c); _ = s.Close() }()
+	_, _ = io.Copy(c, s)
+	_ = c.Close()
 }
 
 func behind(t *testing.T, dsn string) (string, *outage) {
@@ -62,7 +62,7 @@ func behind(t *testing.T, dsn string) (string, *outage) {
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err, "порт посредника не занят")
 	o, target := &outage{}, u.Host
-	t.Cleanup(func() { l.Close(); o.cut(0) })
+	t.Cleanup(func() { _ = l.Close(); o.cut(0) })
 	go func() {
 		for {
 			c, err := l.Accept()
@@ -80,7 +80,7 @@ func manyRecords(t *testing.T, n int) []stored {
 	t.Helper()
 	_, data, err := account.Keys(typedEmail, typedPassword)
 	require.NoError(t, err, "ключ к данным не выведен")
-	kinds := []map[string]string{{"login": "anna", "password": "s3cret"}, {"type": "text", "text": "abcd-1234\n"}, card}
+	kinds := []map[string]string{{"login": "anna", "password": "s3cret"}, {"type": "text", "text": "abcd-1234\n"}, card()}
 	recs := make([]stored, n)
 	for i := range recs {
 		note := "пометка " + string(rune('а'+i%32))
@@ -98,7 +98,7 @@ func putOwn(t *testing.T, dsn, owner string, recs []stored) {
 	t.Helper()
 	conn, err := pgx.Connect(context.Background(), dsn)
 	require.NoError(t, err, "база не открыта")
-	defer conn.Close(context.Background())
+	defer func() { _ = conn.Close(context.Background()) }()
 	for _, r := range recs {
 		_, err = conn.Exec(context.Background(), "INSERT INTO records (id, user_id, note, secret) VALUES ($1, $2, $3, $4)",
 			r.ID, owner, r.Note, base64.StdEncoding.EncodeToString(r.Secret))
@@ -110,7 +110,7 @@ func query(t *testing.T, dsn, sql string, args ...any) string {
 	t.Helper()
 	conn, err := pgx.Connect(context.Background(), dsn)
 	require.NoError(t, err, "база не открыта")
-	defer conn.Close(context.Background())
+	defer func() { _ = conn.Close(context.Background()) }()
 	var got string
 	require.NoError(t, conn.QueryRow(context.Background(), sql, args...).Scan(&got), "запрос не выполнен: %s", sql)
 	return got

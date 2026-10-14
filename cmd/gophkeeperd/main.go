@@ -3,6 +3,7 @@ package main
 import (
 	"io"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -12,12 +13,12 @@ import (
 
 func main() {
 	log.SetFlags(0)
-	if err := newRoot(os.Stdout, os.Stderr).Execute(); err != nil {
+	if err := newRoot(os.Stdout, os.Stderr, http.DefaultClient).Execute(); err != nil {
 		log.Fatal("Ошибка: ", err)
 	}
 }
 
-func newRoot(out, errOut io.Writer) *cobra.Command {
+func newRoot(out, errOut io.Writer, client *http.Client) *cobra.Command {
 	root := &cobra.Command{
 		Use:               "gophkeeperd",
 		Short:             "Сервер GophKeeper",
@@ -25,7 +26,7 @@ func newRoot(out, errOut io.Writer) *cobra.Command {
 	}
 	root.SetOut(out)
 	root.SetErr(errOut)
-	root.AddCommand(workerCmd(), serverCmd())
+	root.AddCommand(workerCmd(client), serverCmd())
 	cli.Localize(root)
 	return root
 }

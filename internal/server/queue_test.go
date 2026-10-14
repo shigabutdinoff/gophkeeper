@@ -32,7 +32,7 @@ func TestQueueAcceptsLoginToken(t *testing.T) {
 	js, _ := q.Run(t, false)
 	stop, err := access.Serve(t.Context(), js.Conn(), q.Seed, "", "https://"+r.addr, r.client(), q.Server)
 	require.NoError(t, err, "служба доступа не получила ключи сервера")
-	t.Cleanup(func() { stop() })
+	t.Cleanup(func() { _ = stop() })
 
 	as := func(token string) nats.Option {
 		return func(o *nats.Options) error {

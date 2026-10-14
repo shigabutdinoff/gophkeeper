@@ -1,6 +1,7 @@
 package server
 
 import (
+	"cmp"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -15,6 +16,7 @@ func (a *auth) routes(s Settings) http.Handler {
 	a.authRoutes(ops)
 	a.recordRoutes(ops)
 	a.writeRoutes(ops, s)
+	operations := cmp.Or(s.operations, http.NotFoundHandler())
 	ops.NotFound(operations.ServeHTTP)
 	ops.MethodNotAllowed(operations.ServeHTTP)
 	r := chi.NewRouter()

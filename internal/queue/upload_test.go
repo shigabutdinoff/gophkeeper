@@ -68,7 +68,7 @@ func TestUploadFull(t *testing.T) {
 	_, err := js.CreateObjectStore(t.Context(), jetstream.ObjectStoreConfig{Bucket: "tight", MaxBytes: 1 << 10})
 	require.NoError(t, err, "тесная корзина не создана")
 	_, err = js.Conn().Subscribe("files.open.*", func(msg *nats.Msg) {
-		msg.Respond(map[string][]byte{record.FilesTopic(anna): []byte("tight")}[msg.Subject])
+		_ = msg.Respond(map[string][]byte{record.FilesTopic(anna): []byte("tight")}[msg.Subject])
 	})
 	require.NoError(t, err, "подписка открытия не создана")
 	err = Upload(t.Context(), q.Admin, anna, object, make([]byte, 1<<12))

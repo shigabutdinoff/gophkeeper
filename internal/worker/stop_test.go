@@ -42,11 +42,11 @@ func TestRunFinishesOnStop(t *testing.T) {
 func TestRunGivesUpAfterGrace(t *testing.T) {
 	q := queuetest.New(t)
 	js, _ := q.Run(t, false)
-	setVar(t, &Grace, 50*time.Millisecond)
+	tune := tuning{grace: 50 * time.Millisecond}
 	f := newFake(t)
 	started, release := holding(f)
 	seq := send(t, q, change(t, anna, uuid.NewV7().String(), "s3cret"))
-	stop := run(t, js, f.server())
+	stop := run(t, js, f.server(tune))
 	<-started
 	require.NoError(t, stop(), "обработчик остановился с ошибкой")
 	info := consumerInfo(t, js)
@@ -56,7 +56,7 @@ func TestRunGivesUpAfterGrace(t *testing.T) {
 	f.reply = nil
 	f.mu.Unlock()
 	close(release)
-	run(t, js, f.server())
+	run(t, js, f.server(tune))
 	acked(t, js, seq)
 	_, rows := f.snapshot()
 	assert.Len(t, rows, 1, "изменение не применено после запуска")
@@ -65,9 +65,9 @@ func TestRunGivesUpAfterGrace(t *testing.T) {
 func TestRunAfterKill(t *testing.T) {
 	q := queuetest.New(t)
 	js, _ := q.Run(t, false)
-	setVar(t, &ackWait, 300*time.Millisecond)
+	tune := tuning{ackWait: 300 * time.Millisecond}
 	f := newFake(t)
-	first := run(t, js, f.server())
+	first := run(t, js, f.server(tune))
 	assert.Eventually(t, func() bool { return consumerInfo(t, js) != nil }, 5*time.Second, 10*time.Millisecond, "потребитель не создан")
 	require.NoError(t, first(), "первый запуск не остановился")
 	seq := send(t, q, change(t, anna, uuid.NewV7().String(), "1"), change(t, anna, uuid.NewV7().String(), "2"),
@@ -76,7 +76,7 @@ func TestRunAfterKill(t *testing.T) {
 	require.NoError(t, err, "потребитель не найден")
 	_, err = c.Next()
 	require.NoError(t, err, "изменение не взято")
-	run(t, js, f.server())
+	run(t, js, f.server(tune))
 	acked(t, js, seq)
 	_, rows := f.snapshot()
 	var order []string

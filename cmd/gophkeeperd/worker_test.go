@@ -40,14 +40,11 @@ func startWorker(ctx context.Context, t *testing.T) (*atomic.Int32, *strings.Bui
 			if json.NewDecoder(r.Body).Decode(&row) == nil && row.Owner == anna {
 				applied.Add(1)
 			}
-			w.Write([]byte(`[{"user_id":"` + anna + `"}]`))
+			_, _ = w.Write([]byte(`[{"user_id":"` + anna + `"}]`))
 		}
 	}))
 	t.Cleanup(srv.Close)
 	q.Supabase = srv.URL
-	old := httpClient
-	httpClient = srv.Client()
-	t.Cleanup(func() { httpClient = old })
 	for k, v := range map[string]string{"CONFIG": "", "GOPHKEEPER_QUEUE": q.Admin.Queue, "GOPHKEEPER_QUEUE_CA": q.Admin.QueueCA,
 		"GOPHKEEPER_QUEUE_USER": q.Admin.QueueUser, "GOPHKEEPER_QUEUE_PASSWORD": q.Admin.QueuePass,
 		"GOPHKEEPER_QUEUE_CREDS_FILE": "", "GOPHKEEPER_SERVER": srv.URL, "GOPHKEEPER_SERVER_KEY": "ключ-сервера",
@@ -57,7 +54,7 @@ func startWorker(ctx context.Context, t *testing.T) (*atomic.Int32, *strings.Bui
 	msg, _, err := record.Put(base64.RawURLEncoding.EncodeToString(make([]byte, 32)), anna, map[string]string{"login": "anna", "password": "s3cret"}, "")
 	require.NoError(t, err, "изменение не собрано")
 	var out, errOut strings.Builder
-	root := newRoot(&out, &errOut)
+	root := newRoot(&out, &errOut, srv.Client())
 	root.SetArgs([]string{"worker"})
 	done := make(chan error, 1)
 	go func() { done <- root.ExecuteContext(ctx) }()

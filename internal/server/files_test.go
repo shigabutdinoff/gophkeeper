@@ -169,8 +169,7 @@ func TestFilesBrokenQueue(t *testing.T) {
 }
 
 func TestFilesSlowUpload(t *testing.T) {
-	set(t, &readTimeout, time.Second)
-	r := start(t)
+	r := start(t, func(s *Settings) { s.readTimeout = time.Second })
 	require.Equal(t, http.StatusOK, r.get(t, keysPath, nil).status, "сервер не запустился")
 	before, owner := storedBytes(t, r.js), uuid.New().String()
 	head := func(id string, n int) string {
@@ -180,14 +179,14 @@ func TestFilesSlowUpload(t *testing.T) {
 	slow, cut := uuid.New().String(), uuid.New().String()
 	conn := r.dial(t)
 	go drip(conn, head(slow, 100), rand.Text()+rand.Text())
-	conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+	_ = conn.SetReadDeadline(time.Now().Add(5 * time.Second))
 	_, err := conn.Read(make([]byte, 1))
 	var ne net.Error
 	assert.False(t, errors.As(err, &ne) && ne.Timeout(), "медленная загрузка не оборвана в срок")
 	broken := r.dial(t)
 	_, err = broken.Write([]byte(head(cut, 1<<20) + string(make([]byte, 300<<10))))
 	require.NoError(t, err, "начало файла не отправлено")
-	broken.Close()
+	_ = broken.Close()
 	for _, id := range []string{slow, cut} {
 		assert.EventuallyWithT(t, func(c *assert.CollectT) {
 			_, err := r.files("service-key").Get(t.Context(), owner, id, 1<<20)

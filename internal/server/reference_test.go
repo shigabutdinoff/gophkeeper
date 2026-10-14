@@ -19,7 +19,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var varying = []string{"access_token", "refresh_token", "id", "user_id", "identity_id", "sub", "email"}
+func varying() []string {
+	return []string{"access_token", "refresh_token", "id", "user_id", "identity_id", "sub", "email"}
+}
 
 func masked(t *testing.T, body string) string {
 	t.Helper()
@@ -55,7 +57,7 @@ func maskValue(t *testing.T, dec *json.Decoder, b *strings.Builder, key string) 
 			b.WriteString(strings.Repeat(",", min(i, 1)))
 			maskValue(t, dec, b, key)
 		}
-	case tok != nil && (slices.Contains(varying, key) || strings.HasSuffix(key, "_at")):
+	case tok != nil && (slices.Contains(varying(), key) || strings.HasSuffix(key, "_at")):
 		b.WriteString(strconv.Quote("<" + key + ">"))
 		return
 	default:
@@ -102,7 +104,7 @@ func (r *recorder) RoundTrip(req *http.Request) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	body, err := io.ReadAll(resp.Body)
 	resp.Body = io.NopCloser(bytes.NewReader(body))
 	r.status, r.header, r.body = resp.StatusCode, resp.Header, body

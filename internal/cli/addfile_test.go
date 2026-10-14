@@ -120,7 +120,7 @@ func TestAddFileRefuses(t *testing.T) {
 	path, _ := picking(t, "id_ed25519", 411)
 	form := runForm
 	setVar(t, &runForm, func(c *cobra.Command, f *huh.Form) error {
-		defer os.Remove(path)
+		defer func() { _ = os.Remove(path) }()
 		return form(c, f)
 	})
 	_, _, err := executeIn(input(t, ""), "add", "--type", "file")

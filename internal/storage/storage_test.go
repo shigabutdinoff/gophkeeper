@@ -55,7 +55,7 @@ func TestGet(t *testing.T) {
 	var method, target string
 	f := startS3(t, func(w http.ResponseWriter, r *http.Request) {
 		method, target = r.Method, r.URL.Path
-		w.Write([]byte("шифр файла"))
+		_, _ = w.Write([]byte("шифр файла"))
 	})
 	data, err := f.client.Get(t.Context(), anna, record, 100)
 	require.NoError(t, err, "объект не прочитан")
@@ -92,7 +92,7 @@ func TestDelete(t *testing.T) {
 func TestSingleAttempt(t *testing.T) {
 	replies := map[string]http.HandlerFunc{
 		"сервер держит ответ": func(_ http.ResponseWriter, r *http.Request) {
-			io.Copy(io.Discard, r.Body)
+			_, _ = io.Copy(io.Discard, r.Body)
 			<-r.Context().Done()
 		},
 		"ответ 503": func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusServiceUnavailable) },

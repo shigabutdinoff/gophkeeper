@@ -79,7 +79,7 @@ func TestOperatorMode(t *testing.T) {
 	t.Cleanup(service.Close)
 	stop, err := access.Serve(t.Context(), service, o.seed, o.account, q.Supabase, http.DefaultClient, o.server)
 	require.NoError(t, err, "служба доступа не запущена")
-	t.Cleanup(func() { stop() })
+	t.Cleanup(func() { _ = stop() })
 
 	_, err = nats.Connect(o.server.ClientURL(), o.sentinel)
 	assert.ErrorIs(t, err, nats.ErrAuthorization, "очередь пустила устройство без входа")

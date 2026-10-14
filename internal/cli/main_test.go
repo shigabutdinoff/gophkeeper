@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"os"
+	"log"
 	"testing"
 
 	"github.com/zalando/go-keyring"
@@ -11,5 +11,7 @@ import (
 
 func TestMain(m *testing.M) {
 	keyring.MockInit()
-	os.Exit(snapstest.CleanM{M: m}.Run())
+	if (snapstest.CleanM{M: m}).Run() != 0 {
+		log.Fatal("тесты пакета или снапшоты не прошли проверку")
+	}
 }

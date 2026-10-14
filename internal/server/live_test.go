@@ -51,7 +51,7 @@ func (l liveSupabase) send(t *testing.T, method, path string, h http.Header, bod
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := l.client.Do(req)
 	require.NoError(t, err, "Supabase не ответил")
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	got, err := io.ReadAll(resp.Body)
 	require.NoError(t, err, "ответ Supabase не прочитан")
 	return resp.StatusCode, string(got), resp.Header

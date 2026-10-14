@@ -55,7 +55,7 @@ func startFlow(t *testing.T) *flow {
 	f := &flow{r: r, data: base64.RawURLEncoding.EncodeToString(make([]byte, 32)), log: &journal{}}
 	stop, err := access.Serve(t.Context(), r.js.Conn(), r.q.Seed, "", "https://"+f.r.addr, f.r.client(), r.q.Server)
 	require.NoError(t, err, "служба доступа не получила ключи сервера")
-	t.Cleanup(func() { stop() })
+	t.Cleanup(func() { _ = stop() })
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
 	s := worker.Server{URL: "https://" + f.r.addr, Key: "service-key", Client: f.r.client(), Log: log.New(f.log, "", 0), Seed: r.q.Seed,

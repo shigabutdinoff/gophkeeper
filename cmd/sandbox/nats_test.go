@@ -52,7 +52,7 @@ func startQueue(t *testing.T) queue {
 	nc, q.admin = connect(t, q.url, q.ca, nil, admin, nats.CustomInboxPrefix("_INBOX.adm"))
 	stop, err := access.Serve(t.Context(), nc, seed, "", q.tokens.Supabase, http.DefaultClient, s)
 	require.NoError(t, err, "служба доступа не запущена")
-	t.Cleanup(func() { stop() })
+	t.Cleanup(func() { _ = stop() })
 	stream, err := loadStream()
 	require.NoError(t, err, "поток не разбирается")
 	_, err = q.admin.CreateStream(context.Background(), stream)

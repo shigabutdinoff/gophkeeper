@@ -3,12 +3,18 @@ package access
 import (
 	"context"
 	"errors"
+	"testing"
 	"time"
 
 	"github.com/nats-io/nats.go/jetstream"
 )
 
-var idle = time.Minute
+func idle() time.Duration {
+	if testing.Testing() {
+		return 300 * time.Millisecond
+	}
+	return time.Minute
+}
 
 func sweep(ctx context.Context, js jetstream.JetStream) {
 	for name := range js.ObjectStoreNames(ctx).Name() {
@@ -18,11 +24,11 @@ func sweep(ctx context.Context, js jetstream.JetStream) {
 		}
 		status, _ := obs.Status(ctx)
 		st, ok := status.(*jetstream.ObjectBucketStatus)
-		if !ok || time.Since(st.StreamInfo().Created) <= idle || time.Since(st.StreamInfo().State.LastTime) <= idle {
+		if !ok || time.Since(st.StreamInfo().Created) <= idle() || time.Since(st.StreamInfo().State.LastTime) <= idle() {
 			continue
 		}
 		if _, err = obs.List(ctx); errors.Is(err, jetstream.ErrNoObjectsFound) {
-			js.DeleteObjectStore(ctx, name)
+			_ = js.DeleteObjectStore(ctx, name)
 		}
 	}
 }

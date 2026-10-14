@@ -12,9 +12,7 @@ import (
 	"github.com/shigabutdinoff/gophkeeper/internal/record"
 )
 
-var maxSealed uint64 = record.MaxSealed
-
-func read(ctx context.Context, js jetstream.JetStream, obs jetstream.ObjectStore, bucket string, meta *jetstream.ObjectInfo, c record.Change) ([]byte, error) {
+func read(ctx context.Context, js jetstream.JetStream, obs jetstream.ObjectStore, bucket string, meta *jetstream.ObjectInfo, c record.Change, maxSealed uint64) ([]byte, error) {
 	parts := "$O." + bucket + ".C." + meta.NUID
 	forged := fmt.Errorf("%w: файл в очереди не тот, что в записи, или не читается", record.ErrForged)
 	linked := meta.Opts != nil && meta.Opts.Link != nil
@@ -36,7 +34,7 @@ func read(ctx context.Context, js jetstream.JetStream, obs jetstream.ObjectStore
 	if err != nil {
 		return nil, err
 	}
-	defer obj.Close()
+	defer func() { _ = obj.Close() }()
 	data, err := io.ReadAll(io.LimitReader(obj, int64(maxSealed)+1))
 	if errors.Is(err, jetstream.ErrDigestMismatch) || err == nil && (uint64(len(data)) > maxSealed || record.Digest(data) != c.Digest) {
 		return nil, forged

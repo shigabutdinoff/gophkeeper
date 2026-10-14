@@ -10,7 +10,7 @@ import (
 
 func (a *auth) signup(w http.ResponseWriter, r *http.Request) {
 	var in credentials
-	if !decode(r, &in) {
+	if !a.decode(r, &in) {
 		respond(w, http.StatusBadRequest, invalid)
 		return
 	}

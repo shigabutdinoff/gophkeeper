@@ -98,12 +98,12 @@ func TestAddText(t *testing.T) {
 	srv := loggedIn(t, q.Client, q.Token(t, annaID, time.Hour))
 	srv.Close()
 	keyboard(t, false)
-	out, errOut, err := executeIn(input(t, codes["text"]), "add", "--type", "text", "--login", "x", "--note", "GitHub, коды восстановления")
+	out, errOut, err := executeIn(input(t, codes()["text"]), "add", "--type", "text", "--login", "x", "--note", "GitHub, коды восстановления")
 	require.NoError(t, err, "текст без сервера не принят")
 	snaps.MatchSnapshot(t, recordID.ReplaceAllString(out, "<id>"), errOut)
 	c := lastChange(t, stream)
 	assert.Equal(t, []string{"put", "GitHub, коды восстановления"}, []string{c.Op, c.Note}, "в очереди не та запись")
-	assert.Equal(t, codes, secretOf(t, c), "текст изменён")
+	assert.Equal(t, codes(), secretOf(t, c), "текст изменён")
 }
 
 func TestAddCard(t *testing.T) {
@@ -114,7 +114,7 @@ func TestAddCard(t *testing.T) {
 	_, errOut, err := executeIn(input(t, ""), "add", "--type", "card", "--note", "Сбербанк, зарплатная")
 	require.NoError(t, err, "карта не принята")
 	snaps.MatchSnapshot(t, errOut)
-	assert.Equal(t, card, secretOf(t, lastChange(t, stream)), "не та карта")
+	assert.Equal(t, card(), secretOf(t, lastChange(t, stream)), "не та карта")
 }
 
 func TestAddLoginSecret(t *testing.T) {

@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/lestrrat-go/jwx/v3/jwa"
 	"github.com/lestrrat-go/jwx/v3/jwk"
@@ -36,7 +37,7 @@ func loadKey(path string) (*auth, error) {
 	log := logrus.New()
 	log.SetOutput(io.Discard)
 	log.SetFormatter(&logrus.TextFormatter{FullTimestamp: true})
-	return &auth{key: key, kid: kid, keys: keys, log: log}, err
+	return &auth{key: key, kid: kid, keys: keys, log: log, validate: validator.New()}, err
 }
 
 func (a *auth) sign(issuer, subject, id string, expires time.Time) (string, error) {

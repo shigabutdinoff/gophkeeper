@@ -30,7 +30,7 @@ func buckets(ctx context.Context, nc *nats.Conn, seed string, log natsserver.Log
 		if _, err := js.CreateOrUpdateObjectStore(ctx, jetstream.ObjectStoreConfig{Bucket: name, MaxBytes: bucketBytes}); err != nil {
 			log.Errorf("корзина файлов %s не открыта: %v", owner, err)
 		}
-		msg.Respond([]byte(name))
+		_ = msg.Respond([]byte(name))
 	})
 	if err != nil {
 		return nil, errors.Join(fmt.Errorf("служба корзин файлов: %w", err), stop())

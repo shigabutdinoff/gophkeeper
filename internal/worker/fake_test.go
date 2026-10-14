@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/shigabutdinoff/gophkeeper/internal/storage"
 )
@@ -120,7 +121,7 @@ func (f *fake) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		w.WriteHeader(http.StatusCreated)
 	}
-	w.Write([]byte(found))
+	_, _ = w.Write([]byte(found))
 }
 
 func (f *fake) writes() []call {
@@ -128,9 +129,14 @@ func (f *fake) writes() []call {
 	return calls
 }
 
-func (f *fake) server() Server {
+func (f *fake) server(tune ...tuning) Server {
+	t := tuning{}
+	if len(tune) > 0 {
+		t = tune[0]
+	}
+	t.maxDelay, t.heartbeat = 10*time.Millisecond, 100*time.Millisecond
 	return Server{URL: f.URL, Key: "ключ-сервера", Client: f.Client(), Log: log.New(&f.log, "", 0),
-		Files: storage.New(f.Client(), f.URL, "eu-north-1", "ключ-приложения", "служебный-ключ"), Seed: seed}
+		Files: storage.New(f.Client(), f.URL, "eu-north-1", "ключ-приложения", "служебный-ключ"), Seed: seed, tuning: t}
 }
 
 func (f *fake) snapshot() ([]call, map[[2]string]string) {

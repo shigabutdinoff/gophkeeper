@@ -14,7 +14,7 @@ func (a *auth) token(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var in credentials
-	if !decode(r, &in) || grant != "password" {
+	if !a.decode(r, &in) || grant != "password" {
 		respond(w, http.StatusBadRequest, invalid)
 		return
 	}

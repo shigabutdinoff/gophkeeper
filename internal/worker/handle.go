@@ -4,15 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/avast/retry-go/v5"
 	"github.com/nats-io/nats.go/jetstream"
 
 	"github.com/shigabutdinoff/gophkeeper/internal/record"
 )
-
-var maxDelay = 5 * time.Second
 
 func handle(ctx context.Context, js jetstream.JetStream, msg jetstream.Msg, s Server) {
 	var seq uint64
@@ -24,26 +21,26 @@ func handle(ctx context.Context, js jetstream.JetStream, msg jetstream.Msg, s Se
 		err = fmt.Errorf("%w: ответ чтения из потока", record.ErrForged)
 	}
 	if err == nil {
-		err = retry.New(retry.Context(ctx), retry.UntilSucceeded(), retry.MaxDelay(maxDelay), retry.LastErrorOnly(true),
+		err = retry.New(retry.Context(ctx), retry.UntilSucceeded(), retry.MaxDelay(s.tuned().maxDelay), retry.LastErrorOnly(true),
 			retry.RetryIf(func(err error) bool { return !errors.Is(err, errSkipped) && !errors.Is(err, record.ErrForged) }),
 			retry.OnRetry(func(_ uint, err error) {
 				s.Log.Printf("изменение %d не применено, повтор: %v", seq, err)
 			}),
 		).Do(func() error {
-			msg.InProgress()
+			_ = msg.InProgress()
 			return apply(ctx, js, msg, s, c)
 		})
 	}
 	switch {
 	case errors.Is(err, record.ErrForged):
 		s.Log.Printf("изменение %d, тема %.64q: %v", seq, msg.Subject(), err)
-		msg.TermWithReason(err.Error())
+		_ = msg.TermWithReason(err.Error())
 	case errors.Is(err, errSkipped):
 		s.Log.Printf("изменение %d, запись %s: %v", seq, c.Record, err)
-		msg.DoubleAck(ctx)
+		_ = msg.DoubleAck(ctx)
 	case err != nil:
-		msg.Nak()
+		_ = msg.Nak()
 	default:
-		msg.DoubleAck(ctx)
+		_ = msg.DoubleAck(ctx)
 	}
 }

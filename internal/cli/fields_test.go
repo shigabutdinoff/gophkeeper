@@ -13,7 +13,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var card = map[string]string{"type": "card", "number": "4111 1111 1111 1111", "expiry": "12/28", "holder": "ANNA IVANOVA", "code": "123"}
+func card() map[string]string {
+	return map[string]string{"type": "card", "number": "4111 1111 1111 1111", "expiry": "12/28", "holder": "ANNA IVANOVA", "code": "123"}
+}
 
 func typing(t *testing.T, values ...string) {
 	t.Helper()
@@ -88,12 +90,12 @@ func TestFieldsCard(t *testing.T) {
 	typing(t, "4111 1111 1111 1111", "12/28", "ANNA IVANOVA", "123")
 	got, _, err := fieldsOf(t, "card", input(t, ""), nil)
 	require.NoError(t, err, "карта не прочитана")
-	assert.Equal(t, card, got, "карта прочитана не та")
+	assert.Equal(t, card(), got, "карта прочитана не та")
 }
 
 func TestFieldsCardKept(t *testing.T) {
 	typing(t, "", "01/30", "", "")
-	got, _, err := fieldsOf(t, "card", input(t, ""), card)
+	got, _, err := fieldsOf(t, "card", input(t, ""), card())
 	require.NoError(t, err, "правка карты не прочитана")
 	assert.Equal(t, map[string]string{"type": "card", "number": "4111 1111 1111 1111", "expiry": "01/30", "holder": "ANNA IVANOVA", "code": "123"}, got, "прежние поля не сохранены")
 }
@@ -128,13 +130,10 @@ func TestFormQuit(t *testing.T) {
 		}
 		return nil
 	})
-	code := 0
-	setVar(t, &exit, func(c int) { code = c })
 	c := &cobra.Command{}
 	c.SetIn(input(t, ""))
 	_, err := askHidden(c, "Пароль")
-	assert.Error(t, err, "недовведённый пароль принят")
-	assert.Equal(t, interruptCode, code, "оборванная форма не завершила команду")
+	assert.ErrorIs(t, err, huh.ErrUserAborted, "оборванная форма не завершила команду")
 }
 
 func TestFormPaste(t *testing.T) {

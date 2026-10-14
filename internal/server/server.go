@@ -1,6 +1,7 @@
 package server
 
 import (
+	"cmp"
 	"context"
 	"crypto/tls"
 	"errors"
@@ -12,9 +13,6 @@ import (
 
 // ErrNoCert сообщает, что сертификат или ключ сервера не заданы.
 var ErrNoCert = errors.New("нужны сертификат и ключ сервера")
-
-var readTimeout, grace = 30 * time.Second, 10 * time.Second
-var operations = http.NotFoundHandler()
 
 // Serve принимает защищённые соединения на l, пока не отменён ctx.
 // После отмены отвечает на начатые запросы не дольше десяти секунд.
@@ -33,12 +31,12 @@ func Serve(ctx context.Context, l net.Listener, s Settings) error {
 		return err
 	}
 	db, _ := a.db.DB()
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	if a.files, err = bucket(context.WithoutCancel(ctx), s); err != nil {
 		return err
 	}
-	srv := &http.Server{Handler: a.routes(s), ReadTimeout: readTimeout,
+	srv := &http.Server{Handler: a.routes(s), ReadTimeout: cmp.Or(s.readTimeout, 30*time.Second),
 		TLSConfig:    &tls.Config{Certificates: []tls.Certificate{cert}},
 		TLSNextProto: map[string]func(*http.Server, *tls.Conn, http.Handler){}}
-	return serve(ctx, srv, l)
+	return serve(ctx, srv, l, cmp.Or(s.grace, 10*time.Second))
 }

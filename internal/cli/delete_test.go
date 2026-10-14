@@ -28,7 +28,7 @@ func TestDeleteOffline(t *testing.T) {
 }
 
 func TestDeleteTypes(t *testing.T) {
-	for _, rec := range []stored{sealedAs(t, codes, ""), sealedAs(t, card, "")} {
+	for _, rec := range []stored{sealedAs(t, codes(), ""), sealedAs(t, card(), "")} {
 		_, stream := withQueue(t, replyJSON(t, []stored{rec}))
 		_, _, err := executeIn(keyboard(t, true, ""), "delete", rec.ID)
 		require.NoError(t, err, "удаление не принято")

@@ -39,12 +39,6 @@ func TestConnectExtra(t *testing.T) {
 	assert.Equal(t, "обработчик", nc.Opts.Name, "дополнительный параметр не применён")
 }
 
-func shortAttempt(t *testing.T) {
-	old := attempt
-	attempt = 200 * time.Millisecond
-	t.Cleanup(func() { attempt = old })
-}
-
 func TestSendOnce(t *testing.T) {
 	q := queuetest.New(t)
 	q.Start(t, false)
@@ -55,7 +49,6 @@ func TestSendOnce(t *testing.T) {
 }
 
 func TestSendLostAck(t *testing.T) {
-	shortAttempt(t)
 	q := queuetest.New(t)
 	js, stream := q.Start(t, true)
 	go func() {

@@ -15,13 +15,12 @@ import (
 
 const projectDir = "../.."
 
-var serialScripts sync.Mutex
-
 func TestMain(m *testing.M) {
 	testscript.Main(snapstest.CleanM{M: m}, map[string]func(){"gophkeeper": func() { keyring.MockInit(); main() }})
 }
 
 func TestScripts(t *testing.T) {
+	var serialScripts sync.Mutex
 	project, err := filepath.Abs(projectDir)
 	require.NoError(t, err, "путь к проекту не получен")
 	testscript.Run(t, testscript.Params{

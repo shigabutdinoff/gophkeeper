@@ -22,15 +22,15 @@ func TestSignup(t *testing.T) {
 		want  error
 	}{
 		"created": {func(w http.ResponseWriter, _ *http.Request) {
-			w.Write([]byte(`{"refresh_token":"обновление"}`))
+			_, _ = w.Write([]byte(`{"refresh_token":"обновление"}`))
 		}, nil},
 		"exists": {func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusUnprocessableEntity)
-			w.Write([]byte(`{"code":422,"error_code":"user_already_exists","msg":"User already registered"}`))
+			_, _ = w.Write([]byte(`{"code":422,"error_code":"user_already_exists","msg":"User already registered"}`))
 		}, ErrExists},
 		"unknown": {func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(`{"error_code":"secret-detail","msg":"secret-detail"}`))
+			_, _ = w.Write([]byte(`{"error_code":"secret-detail","msg":"secret-detail"}`))
 		}, ErrServer},
 		"not json": {func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusBadGateway) }, ErrServer},
 		"silent": {func(_ http.ResponseWriter, r *http.Request) {

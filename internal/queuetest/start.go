@@ -32,6 +32,6 @@ func (q *Queue) Start(t testing.TB, noAck bool) (jetstream.JetStream, jetstream.
 	js, stream := q.Run(t, noAck)
 	stop, err := access.Serve(t.Context(), js.Conn(), q.Seed, "", q.Supabase, http.DefaultClient, q.Server)
 	require.NoError(t, err, "служба доступа не запущена")
-	t.Cleanup(func() { stop() })
+	t.Cleanup(func() { _ = stop() })
 	return js, stream
 }

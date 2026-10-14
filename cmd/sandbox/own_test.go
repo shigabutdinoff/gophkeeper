@@ -21,7 +21,7 @@ import (
 
 var caPEM = regexp.MustCompile(`(?s)-----BEGIN CERTIFICATE-----.*-----END CERTIFICATE-----`)
 
-func fakeDocker() {
+func fakeDocker() int {
 	state := "нет"
 	if _, err := os.Stat(filepath.Join(os.Getenv("CONFIG"), "gophkeeper", sandboxName)); err == nil {
 		state = "есть"
@@ -30,14 +30,15 @@ func fakeDocker() {
 	f, err := os.OpenFile(os.Getenv("DOCKER_JOURNAL"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "журнал подделки:", err)
-		os.Exit(2)
+		return 2
 	}
-	fmt.Fprintf(f, "%s, каталог песочницы: %s\n", line, state)
-	f.Close()
+	_, _ = fmt.Fprintf(f, "%s, каталог песочницы: %s\n", line, state)
+	_ = f.Close()
 	if fail := os.Getenv("DOCKER_FAIL"); fail != "" && strings.Contains(line, fail) {
 		fmt.Fprintln(os.Stderr, "Cannot connect to the Docker daemon at unix:///fake.sock. Is the docker daemon running?")
-		os.Exit(1)
+		return 1
 	}
+	return 0
 }
 
 func clientSettings(ts *testscript.TestScript) (config.Settings, string) {
@@ -61,7 +62,7 @@ func status(ts *testscript.TestScript, neg bool, args []string) {
 	}
 	resp, err := client.Do(req)
 	ts.Check(err)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	_, err = fmt.Fprintln(ts.Stdout(), resp.StatusCode)
 	ts.Check(err)
 }
@@ -88,7 +89,7 @@ func signin(ts *testscript.TestScript, neg bool, args []string) {
 	}
 	resp, err := client.Do(req)
 	ts.Check(err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	var got struct {
 		Access  string `json:"access_token"`
 		Refresh string `json:"refresh_token"`
@@ -107,10 +108,10 @@ func settings(ts *testscript.TestScript, neg bool, args []string) {
 		ts.Fatalf("использование: settings")
 	}
 	c, text := clientSettings(ts)
-	_, port, err := net.SplitHostPort(ownAddr)
+	_, port, err := net.SplitHostPort(ownAddr())
 	ts.Check(err)
 	masked := strings.NewReplacer(ts.Getenv("CONFIG"), "$CONFIG", c.AppKey, "<app_key>", ":"+port, ":<own>",
-		":"+strconv.Itoa(sandboxPort), ":<queue>", ":"+strconv.Itoa(sandboxLeafPort), ":<leaf>").Replace(caPEM.ReplaceAllString(text, "<ca>"))
+		":"+strconv.Itoa(sandboxPort()), ":<queue>", ":"+strconv.Itoa(leafPort()), ":<leaf>").Replace(caPEM.ReplaceAllString(text, "<ca>"))
 	_, err = fmt.Fprint(ts.Stdout(), masked)
 	ts.Check(err)
 }
@@ -119,7 +120,7 @@ func occupy(ts *testscript.TestScript, neg bool, args []string) {
 	if neg || len(args) != 0 {
 		ts.Fatalf("использование: occupy")
 	}
-	l, err := net.Listen("tcp", ownAddr)
+	l, err := net.Listen("tcp", ownAddr())
 	ts.Check(err)
-	ts.Defer(func() { l.Close() })
+	ts.Defer(func() { _ = l.Close() })
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"net/http"
 	"os"
 	"path/filepath"
 
@@ -15,16 +14,14 @@ import (
 	"github.com/shigabutdinoff/gophkeeper/internal/server"
 )
 
-var workerClient = http.DefaultClient
-
 func ownServer(state string) (func(context.Context, *natsserver.Server) error, error) {
 	c, cert, err := backend(state)
 	if cert == "" || err != nil {
 		return func(context.Context, *natsserver.Server) error { return nil }, err
 	}
-	l, err := net.Listen("tcp", ownAddr)
+	l, err := net.Listen("tcp", ownAddr())
 	if err != nil {
-		return nil, fmt.Errorf("адрес своего сервера %s не открыт: %w", ownAddr, err)
+		return nil, fmt.Errorf("адрес своего сервера %s не открыт: %w", ownAddr(), err)
 	}
 	return func(ctx context.Context, s *natsserver.Server) error {
 		admin, err := sandboxUser(state, adminUser)
@@ -38,7 +35,7 @@ func ownServer(state string) (func(context.Context, *natsserver.Server) error, e
 		defer nc.Close()
 		js, _ := jetstream.New(nc)
 		return server.Serve(ctx, l, server.Settings{Cert: filepath.Join(state, certFile), Key: filepath.Join(state, keyFile),
-			AppKey: c.Supabase.Key, ServerKey: c.ServiceKey, TokenKey: filepath.Join(state, tokenKeyFile), Database: ownDatabase, Log: os.Stderr,
+			AppKey: c.Supabase.Key, ServerKey: c.ServiceKey, TokenKey: filepath.Join(state, tokenKeyFile), Database: ownDatabase(), Log: os.Stderr,
 			Queue: js, FilesLimit: 1 << 30})
 	}, nil
 }

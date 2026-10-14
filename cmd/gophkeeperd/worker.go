@@ -14,9 +14,7 @@ import (
 	"github.com/shigabutdinoff/gophkeeper/internal/queue"
 )
 
-var httpClient = http.DefaultClient
-
-func workerCmd() *cobra.Command {
+func workerCmd(client *http.Client) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "worker",
 		Short: "Применять изменения из очереди к серверу",
@@ -40,7 +38,7 @@ func workerCmd() *cobra.Command {
 		defer nc.Close()
 		ctx, stop := signal.NotifyContext(c.Context(), syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 		defer stop()
-		return run(ctx, nc, s, c.ErrOrStderr())
+		return run(ctx, nc, s, c.ErrOrStderr(), client)
 	}
 	return cmd
 }

@@ -39,5 +39,5 @@ func sandboxUser(state, user string) (nats.Option, error) {
 
 func sandboxAccess(state string) (queueAccess, error) {
 	admin, err := sandboxUser(state, adminUser)
-	return queueAccess{URL: sandboxQueue, Admin: admin}, err
+	return queueAccess{URL: sandboxQueue(), Admin: admin}, err
 }

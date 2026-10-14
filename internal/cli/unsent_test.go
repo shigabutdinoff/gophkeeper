@@ -129,7 +129,7 @@ func TestListUnsentOnlyDelete(t *testing.T) {
 
 func TestListUnsentOther(t *testing.T) {
 	srv, q := queueDown(t)
-	msg, _ := unsentPut(t, annaData(t), codes, "коды")
+	msg, _ := unsentPut(t, annaData(t), codes(), "коды")
 	onDevice(t, q, msg)
 	srv.Close()
 	_, err := noServer(t, "", "list", missing)
@@ -140,7 +140,7 @@ func TestListUnsentOther(t *testing.T) {
 
 func TestListUnsentText(t *testing.T) {
 	srv, q := queueDown(t)
-	msg, id := unsentPut(t, annaData(t), codes, "GitHub, коды восстановления")
+	msg, id := unsentPut(t, annaData(t), codes(), "GitHub, коды восстановления")
 	onDevice(t, q, msg)
 	srv.Close()
 	out, err := noServer(t, "", "list", id)

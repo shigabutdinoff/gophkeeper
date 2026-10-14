@@ -11,7 +11,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var flagArgs = []string{"--name", "-n", "--nosuch", "-x", "-hx", "--help=да", "---x", "--name=x"}
+func flagArgs() []string {
+	return []string{"--name", "-n", "--nosuch", "-x", "-hx", "--help=да", "---x", "--name=x"}
+}
 
 func parseFlag(arg string) error {
 	flags := pflag.NewFlagSet("test", pflag.ContinueOnError)
@@ -25,7 +27,7 @@ func parseFlag(arg string) error {
 }
 
 func TestFlagError(t *testing.T) {
-	for _, arg := range flagArgs {
+	for _, arg := range flagArgs() {
 		t.Run(arg, func(t *testing.T) {
 			snaps.MatchSnapshot(t, flagError(nil, parseFlag(arg)).Error())
 		})
@@ -33,7 +35,7 @@ func TestFlagError(t *testing.T) {
 }
 
 func FuzzFlagError(f *testing.F) {
-	for _, arg := range flagArgs {
+	for _, arg := range flagArgs() {
 		f.Add(arg)
 	}
 	russian := regexp.MustCompile(`^(неизвестный флаг|флагу|неверное значение|неверный синтаксис флага|неверный флаг)`)

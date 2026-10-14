@@ -35,7 +35,7 @@ func serveOnce(t *testing.T, s Settings) (net.Addr, error) {
 	t.Helper()
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err, "порт не занят")
-	defer l.Close()
+	defer func() { _ = l.Close() }()
 	done := make(chan error, 1)
 	go func() { done <- Serve(t.Context(), l, s) }()
 	select {
@@ -84,7 +84,7 @@ func TestNoDatabase(t *testing.T) {
 	closed, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err, "порт не занят")
 	port := strconv.Itoa(closed.Addr().(*net.TCPAddr).Port)
-	closed.Close()
+	_ = closed.Close()
 	s := Settings{Cert: cert, Key: key, AppKey: "app-key", ServerKey: "service-key", TokenKey: tokenKey(t),
 		Database: "postgres://postgres:s3cret@127.0.0.1:" + port + "/base?sslmode=disable"}
 	addr, err := serveOnce(t, s)
@@ -92,7 +92,7 @@ func TestNoDatabase(t *testing.T) {
 	assert.NotContains(t, err.Error(), "s3cret", "пароль базы попал в ошибку")
 	l, err := net.Listen("tcp", addr.String())
 	require.NoError(t, err, "порт остался занят")
-	l.Close()
+	_ = l.Close()
 }
 
 func TestPoolSettingsRefused(t *testing.T) {
@@ -104,7 +104,7 @@ func TestPoolSettingsRefused(t *testing.T) {
 	assert.NotContains(t, err.Error(), ":test@", "пароль базы попал в ошибку")
 	l, err := net.Listen("tcp", addr.String())
 	require.NoError(t, err, "порт остался занят")
-	l.Close()
+	_ = l.Close()
 	r := startOn(t, dsn, tokenKey(t))
 	assert.Equal(t, http.StatusOK, r.get(t, keysPath, nil).status, "сервер не запустился без настройки пула")
 }
@@ -121,7 +121,7 @@ func migrated(t *testing.T, dsn string) *goose.Provider {
 	t.Helper()
 	db, err := sql.Open("pgx", dsn)
 	require.NoError(t, err, "база не открыта")
-	t.Cleanup(func() { db.Close() })
+	t.Cleanup(func() { _ = db.Close() })
 	p, err := goose.NewProvider(goose.DialectPostgres, db, migrations)
 	require.NoError(t, err, "миграции не прочитаны")
 	return p

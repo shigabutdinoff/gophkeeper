@@ -7,8 +7,8 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
+	"log"
 	"net/http"
-	"os"
 	"testing"
 	"time"
 
@@ -31,7 +31,9 @@ const (
 )
 
 func TestMain(m *testing.M) {
-	os.Exit(snapstest.CleanM{M: m}.Run())
+	if (snapstest.CleanM{M: m}).Run() != 0 {
+		log.Fatal("тесты пакета или снапшоты не прошли проверку")
+	}
 }
 
 func dial(t *testing.T, q *queuetest.Queue, opts ...nats.Option) (*nats.Conn, error) {
@@ -151,7 +153,7 @@ func TestServeWithoutKeys(t *testing.T) {
 	js, _ := q.Run(t, false)
 	stop, err := access.Serve(t.Context(), js.Conn(), q.Seed, "", "http://127.0.0.1:1", http.DefaultClient, q.Server)
 	require.NoError(t, err, "служба не запустилась, пока сервер недоступен")
-	defer stop()
+	defer func() { _ = stop() }()
 	_, err = dial(t, q, q.As(t, anna))
 	assert.ErrorIs(t, err, nats.ErrAuthorization, "очередь пустила устройство без ключей сервера")
 }

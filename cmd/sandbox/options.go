@@ -35,7 +35,7 @@ func serverOptions(state string, port, leaf int) (*server.Options, string, error
 }
 
 func launchQueue(state string) (*server.Server, string, error) {
-	opts, seed, err := serverOptions(state, sandboxPort, sandboxLeafPort)
+	opts, seed, err := serverOptions(state, sandboxPort(), leafPort())
 	if err != nil {
 		return nil, "", err
 	}

@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"net"
 	"os"
 	"path/filepath"
 )
@@ -12,10 +11,6 @@ const (
 	serviceKeyFile = "service_key"
 	tokenKeyFile   = "token_key.pem"
 )
-
-var ownAddr = net.JoinHostPort(sandboxHost, "54443")
-
-var ownDatabase = "postgres://postgres:gophkeeper-sandbox@" + sandboxHost + ":54320/postgres?sslmode=disable"
 
 func ownMode(state string) bool {
 	_, err := os.Stat(filepath.Join(state, serviceKeyFile))
@@ -29,7 +24,7 @@ func backend(state string) (c serviceConfig, cert string, err error) {
 	}
 	service, err := os.ReadFile(filepath.Join(state, serviceKeyFile))
 	app, aerr := os.ReadFile(filepath.Join(state, appKeyFile))
-	c.Supabase.URL, c.Supabase.Key, c.Supabase.Region, c.ServiceKey = httpsURL("https://"+ownAddr), string(app), "us-east-1", string(service)
+	c.Supabase.URL, c.Supabase.Key, c.Supabase.Region, c.ServiceKey = httpsURL("https://"+ownAddr()), string(app), "us-east-1", string(service)
 	return c, filepath.Join(state, caFile), errors.Join(err, aerr)
 }
 

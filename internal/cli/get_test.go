@@ -60,7 +60,7 @@ func serveFile(t *testing.T, size int, object func(f *fileServer, n int32, w htt
 }
 
 func whole(f *fileServer, _ int32, w http.ResponseWriter) {
-	w.Write(f.sealed)
+	_, _ = w.Write(f.sealed)
 }
 
 func target(t *testing.T) string {
@@ -118,11 +118,11 @@ func TestGetSilent(t *testing.T) {
 func TestGetResumes(t *testing.T) {
 	f := serveFile(t, 411, func(f *fileServer, n int32, w http.ResponseWriter) {
 		if n > 1 {
-			w.Write(f.sealed)
+			_, _ = w.Write(f.sealed)
 			return
 		}
 		w.Header().Set("Content-Length", strconv.Itoa(len(f.sealed)))
-		w.Write(f.sealed[:200])
+		_, _ = w.Write(f.sealed[:200])
 	})
 	path := target(t)
 	_, _, err := executeIn(keyboard(t, true, ""), "get", f.rec.ID, path)
@@ -141,7 +141,7 @@ func TestGetDamaged(t *testing.T) {
 		"объекта нет": {411, func(_ *fileServer, _ int32, w http.ResponseWriter) {
 			http.Error(w, "<Error><Code>NoSuchKey</Code></Error>", http.StatusNotFound)
 		}},
-		"объект обрезан": {411, func(f *fileServer, _ int32, w http.ResponseWriter) { w.Write(f.sealed[:300]) }},
+		"объект обрезан": {411, func(f *fileServer, _ int32, w http.ResponseWriter) { _, _ = w.Write(f.sealed[:300]) }},
 		"размер не тот":  {5, whole},
 	}
 	var errs []string

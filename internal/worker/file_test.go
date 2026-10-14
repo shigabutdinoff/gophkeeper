@@ -64,7 +64,7 @@ func waiting(t *testing.T, js jetstream.JetStream, owner, id string) bool {
 	return err == nil
 }
 
-func settled(t *testing.T, js jetstream.JetStream) {
+func settled(t *testing.T, js jetstream.JetStream, ackWait time.Duration) {
 	t.Helper()
 	assert.Never(t, func() bool {
 		info := consumerInfo(t, js)
@@ -95,12 +95,12 @@ func TestRunMovesFile(t *testing.T) {
 func TestRunDropsForgedFile(t *testing.T) {
 	q := queuetest.New(t)
 	js, _ := q.Run(t, false)
-	setVar(t, &ackWait, 300*time.Millisecond)
+	tune := tuning{ackWait: 300 * time.Millisecond}
 	f := newFake(t)
 	id, next := uuid.NewV7().String(), uuid.NewV7().String()
 	upload(t, js, anna, id, "подменённый s3cret")
 	seq := send(t, q, filed(t, anna, id, otherDigest), change(t, boris, next, "верный"))
-	run(t, js, f.server())
+	run(t, js, f.server(tune))
 	acked(t, js, seq)
 	trace, objects := f.stored()
 	_, rows := f.snapshot()
@@ -108,7 +108,7 @@ func TestRunDropsForgedFile(t *testing.T) {
 	assert.Equal(t, []string{"POST records"}, trace, "сервер тронут подменённым файлом")
 	assert.Equal(t, map[[2]string]string{{boris, next}: "пометка/" + b64("верный")}, rows, "запись о подменённом файле создана или очередь встала")
 	assert.False(t, waiting(t, js, anna, id), "подменённый файл остался в корзине")
-	settled(t, js)
+	settled(t, js, tune.ackWait)
 	for _, l := range f.log.lines("") {
 		assert.NotContains(t, l, "s3cret", "журнал содержит содержимое")
 	}
@@ -132,8 +132,7 @@ func TestRunSkipsMissingFile(t *testing.T) {
 func TestRunRetriesStorage(t *testing.T) {
 	q := queuetest.New(t)
 	js, _ := q.Run(t, false)
-	setVar(t, &attempt, 100*time.Millisecond)
-	setVar(t, &ackWait, 300*time.Millisecond)
+	tune := tuning{attempt: 100 * time.Millisecond, ackWait: 300 * time.Millisecond}
 	f := newFake(t)
 	f.files = func(n int, w http.ResponseWriter) bool {
 		if n == 0 {
@@ -146,7 +145,7 @@ func TestRunRetriesStorage(t *testing.T) {
 	}
 	id := uuid.NewV7().String()
 	seq := send(t, q, filed(t, anna, id, upload(t, js, anna, id, "шифр файла")))
-	run(t, js, f.server())
+	run(t, js, f.server(tune))
 	acked(t, js, seq)
 	trace, objects := f.stored()
 	_, rows := f.snapshot()
@@ -160,7 +159,7 @@ func TestRunRetriesStorage(t *testing.T) {
 func TestRunDropsUnreadableFile(t *testing.T) {
 	q := queuetest.New(t)
 	js, _ := q.Run(t, false)
-	setVar(t, &maxSealed, 16)
+	tune := tuning{maxSealed: 16}
 	f := newFake(t)
 	huge, bare, next := uuid.NewV7().String(), uuid.NewV7().String(), uuid.NewV7().String()
 	meta, err := json.Marshal(jetstream.ObjectInfo{ObjectMeta: jetstream.ObjectMeta{Name: bare}, Bucket: named(boris), NUID: "x", Size: 4, Chunks: 1, Digest: otherDigest})
@@ -170,7 +169,7 @@ func TestRunDropsUnreadableFile(t *testing.T) {
 	require.NoError(t, err, "мета без частей не записана")
 	seq := send(t, q, filed(t, anna, huge, upload(t, js, anna, huge, "зашифрованный файл больше предела")),
 		filed(t, boris, bare, otherDigest), change(t, anna, next, "верный"))
-	run(t, js, f.server())
+	run(t, js, f.server(tune))
 	acked(t, js, seq)
 	trace, objects := f.stored()
 	_, rows := f.snapshot()
@@ -266,7 +265,7 @@ func TestRunDropsLinkToForeignBucket(t *testing.T) {
 func TestRunDropsUnderstatedSize(t *testing.T) {
 	q := queuetest.New(t)
 	js, _ := q.Run(t, false)
-	setVar(t, &maxSealed, 16)
+	tune := tuning{maxSealed: 16}
 	f := newFake(t)
 	id, next := uuid.NewV7().String(), uuid.NewV7().String()
 	digest := upload(t, js, anna, id, "зашифрованный файл больше предела")
@@ -275,7 +274,7 @@ func TestRunDropsUnderstatedSize(t *testing.T) {
 	real.Size = 8
 	forgedMeta(t, js, *real)
 	seq := send(t, q, filed(t, anna, id, digest), change(t, boris, next, "верный"))
-	run(t, js, f.server())
+	run(t, js, f.server(tune))
 	acked(t, js, seq)
 	_, objects := f.stored()
 	_, rows := f.snapshot()
@@ -307,7 +306,7 @@ func (r countedResult) Read(p []byte) (int, error) {
 func TestReadStopsAtLimit(t *testing.T) {
 	q := queuetest.New(t)
 	js, _ := q.Run(t, false)
-	setVar(t, &maxSealed, 16)
+	const limit = 16
 	id := uuid.NewV7().String()
 	digest := upload(t, js, anna, id, "зашифрованный файл больше предела")
 	var got int
@@ -315,9 +314,9 @@ func TestReadStopsAtLimit(t *testing.T) {
 	meta, err := obs.GetInfo(t.Context(), id)
 	require.NoError(t, err, "сведения об объекте не получены")
 	meta.Size = 8
-	_, err = read(t.Context(), js, obs, named(anna), meta, record.Change{Record: id, Digest: digest})
+	_, err = read(t.Context(), js, obs, named(anna), meta, record.Change{Record: id, Digest: digest}, limit)
 	require.ErrorIs(t, err, record.ErrForged, "файл больше предела не отброшен")
-	assert.EqualValues(t, maxSealed+1, got, "из очереди прочитано не столько, сколько позволяет предел")
+	assert.EqualValues(t, limit+1, got, "из очереди прочитано не столько, сколько позволяет предел")
 }
 
 func TestRunSkipDeletesStorageOrphan(t *testing.T) {
@@ -327,7 +326,7 @@ func TestRunSkipDeletesStorageOrphan(t *testing.T) {
 	f.reply = func(n int, w http.ResponseWriter) bool {
 		if n == 0 {
 			w.WriteHeader(http.StatusCreated)
-			w.Write([]byte("[]"))
+			_, _ = w.Write([]byte("[]"))
 			return true
 		}
 		return false

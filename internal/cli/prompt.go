@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"os"
 	"unicode/utf8"
 
 	"charm.land/huh/v2"
@@ -10,15 +9,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	minPassword   = 8
-	interruptCode = 130
-)
+const minPassword = 8
 
-var (
-	isTerminal = term.IsTerminal
-	exit       = os.Exit
-)
+var isTerminal = term.IsTerminal
 
 func prompt(c *cobra.Command) (email, password string, err error) {
 	err = fill(c, huh.NewInput().Title("Email").Value(&email),

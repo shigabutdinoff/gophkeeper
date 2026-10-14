@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"errors"
-
 	tea "charm.land/bubbletea/v2"
 	"charm.land/huh/v2"
 	"github.com/spf13/cobra"
@@ -23,9 +21,6 @@ func fill(c *cobra.Command, inputs ...huh.Field) error {
 	err := runForm(c, f)
 	if err == nil && f.State != huh.StateCompleted {
 		err = huh.ErrUserAborted
-	}
-	if errors.Is(err, huh.ErrUserAborted) {
-		exit(interruptCode)
 	}
 	return err
 }

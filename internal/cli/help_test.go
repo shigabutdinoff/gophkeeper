@@ -9,10 +9,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var englishLeftovers = []string{
-	"Usage:", "Available Commands", "Flags:", "Global Flags", "help for",
-	"Generate the autocompletion", "for more information", "Additional help topics",
-	"[flags]", "[command]", "--no-descriptions", "version for",
+func englishLeftovers() []string {
+	return []string{
+		"Usage:", "Available Commands", "Flags:", "Global Flags", "help for",
+		"Generate the autocompletion", "for more information", "Additional help topics",
+		"[flags]", "[command]", "--no-descriptions", "version for",
+	}
 }
 
 func TestHelp(t *testing.T) {
@@ -24,7 +26,7 @@ func TestHelp(t *testing.T) {
 			assert.Equal(t, out, short, "справка по -h отличается от --help")
 			topic := mustExecute(t, slices.Concat([]string{"help"}, path)...)
 			assert.Equal(t, out, topic, "справка через help отличается от --help")
-			for _, phrase := range englishLeftovers {
+			for _, phrase := range englishLeftovers() {
 				assert.NotContains(t, out, phrase, "в справке осталось %q", phrase)
 			}
 		})

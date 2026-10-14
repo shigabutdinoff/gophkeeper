@@ -12,9 +12,11 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-var pauses = []time.Duration{time.Second, 3 * time.Second}
-
-func again(ctx context.Context, f func() error) error {
+func (a *auth) again(ctx context.Context, f func() error) error {
+	pauses := a.pauses
+	if pauses == nil {
+		pauses = []time.Duration{time.Second, 3 * time.Second}
+	}
 	return retry.New(retry.Context(ctx), retry.Attempts(uint(len(pauses)+1)), retry.LastErrorOnly(true), retry.RetryIf(lost),
 		retry.DelayType(func(n uint, _ error, _ retry.DelayContext) time.Duration { return pauses[n-1] })).Do(f)
 }

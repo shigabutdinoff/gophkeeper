@@ -12,12 +12,12 @@ func (a *auth) refresh(w http.ResponseWriter, r *http.Request) {
 	var in struct {
 		Token string `json:"refresh_token" validate:"required"`
 	}
-	if !decode(r, &in) {
+	if !a.decode(r, &in) {
 		respond(w, http.StatusBadRequest, invalid)
 		return
 	}
 	var s session
-	err := again(r.Context(), func() error {
+	err := a.again(r.Context(), func() error {
 		return a.db.WithContext(r.Context()).InnerJoins("Account").Take(&s, "refresh_token = ?", in.Token).Error
 	})
 	switch {

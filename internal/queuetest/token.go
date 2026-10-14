@@ -43,5 +43,5 @@ func (q *Queue) As(t testing.TB, owner string) nats.Option {
 func (q *Queue) JWKS(w http.ResponseWriter, _ *http.Request) {
 	point, _ := q.key.PublicKey.Bytes()
 	x, y := base64.RawURLEncoding.EncodeToString(point[1:33]), base64.RawURLEncoding.EncodeToString(point[33:])
-	json.NewEncoder(w).Encode(map[string]any{"keys": []map[string]string{{"kty": "EC", "crv": "P-256", "alg": "ES256", "x": x, "y": y}}})
+	_ = json.NewEncoder(w).Encode(map[string]any{"keys": []map[string]string{{"kty": "EC", "crv": "P-256", "alg": "ES256", "x": x, "y": y}}})
 }

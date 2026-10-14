@@ -55,7 +55,7 @@ func TestUnlockOldRecord(t *testing.T) {
 	require.NoError(t, err, "вход не прошёл")
 	r, _ := recall()
 	r.Access, r.User = "", ""
-	require.NoError(t, keep(r), "запись не сохранена")
+	require.NoError(t, keep(r, keyring.Set), "запись не сохранена")
 	g.set(func(g *gotrue) { g.fail = true })
 	keys, err := Unlock(t.Context(), g.client, g.settings, noAsk)
 	require.NoError(t, err, "старый вход без сервера не принят")
@@ -90,22 +90,15 @@ func TestUnlockRetriesBusyRefresh(t *testing.T) {
 	assert.NoError(t, keys.Down, "причина сбоя после удачного повтора")
 }
 
-func TestUnlockKeyringBusy(t *testing.T) {
-	g := startGotrue(t, false)
-	_, err := Login(t.Context(), g.client, g.settings, "anna@example.com", "пароль-Анны")
-	require.NoError(t, err, "вход не прошёл")
-	g.set(func(g *gotrue) { g.access = "доступ-2" })
-	calls, orig := 0, set
-	set = func(service, user, password string) error {
+func TestKeepKeyringBusy(t *testing.T) {
+	calls := 0
+	busy := func(service, user, password string) error {
 		if calls++; calls == 1 {
 			return errors.New("exit status 45")
 		}
-		return orig(service, user, password)
+		return keyring.Set(service, user, password)
 	}
-	t.Cleanup(func() { set = orig })
-	keys, err := Unlock(t.Context(), g.client, g.settings, noAsk)
-	require.NoError(t, err, "занятое хранилище секретов прервало команду")
-	assert.NoError(t, keys.Down, "причина сбоя при живом сервере")
+	require.NoError(t, keep(record{Access: "доступ-2"}, busy), "занятое хранилище секретов прервало запись")
 	r, _ := recall()
 	assert.Equal(t, "доступ-2", r.Access, "новый токен доступа не сохранён после повтора")
 	assert.Equal(t, 2, calls, "запись в хранилище не повторена один раз")

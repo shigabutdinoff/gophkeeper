@@ -40,7 +40,7 @@ func serverCmd() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("адрес %s не открыт: %w", s.Address, err)
 		}
-		defer l.Close()
+		defer func() { _ = l.Close() }()
 		ctx, stop := signal.NotifyContext(c.Context(), syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 		defer stop()
 		return server.Serve(ctx, l, server.Settings{Cert: s.Cert, Key: s.Key, AppKey: s.AppKey, ServerKey: s.ServerKey,

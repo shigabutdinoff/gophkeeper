@@ -16,7 +16,7 @@ func transfer(ctx context.Context, js jetstream.JetStream, msg jetstream.Msg, s 
 	}
 	ctx, cancel := context.WithTimeout(ctx, fileAttempt)
 	defer cancel()
-	go extend(ctx, msg, ackWait/3)
+	go extend(ctx, msg, s.tuned().ackWait/3)
 	name := record.Bucket(s.Seed, c.Owner)
 	obs, err := js.ObjectStore(ctx, name)
 	var meta *jetstream.ObjectInfo
@@ -29,7 +29,7 @@ func transfer(ctx context.Context, js jetstream.JetStream, msg jetstream.Msg, s 
 	if err != nil {
 		return nil, err
 	}
-	data, err := read(ctx, js, obs, name, meta, c)
+	data, err := read(ctx, js, obs, name, meta, c, s.tuned().maxSealed)
 	if errors.Is(err, record.ErrForged) {
 		if derr := obs.Delete(ctx, c.Record); derr != nil {
 			err = fmt.Errorf("%w, объект из корзины не удалён: %v", err, derr)

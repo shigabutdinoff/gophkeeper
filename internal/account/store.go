@@ -7,6 +7,8 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
+	"github.com/zalando/go-keyring"
+
 	"github.com/shigabutdinoff/gophkeeper/internal/config"
 )
 
@@ -25,7 +27,7 @@ func save(r record) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	kept := keep(r) == nil
+	kept := keep(r, keyring.Set) == nil
 	data, err := yaml.Marshal(session{Server: r.Server, Email: r.Email, Kept: kept})
 	if err == nil {
 		err = os.MkdirAll(filepath.Dir(path), 0o700)

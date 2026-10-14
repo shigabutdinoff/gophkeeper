@@ -12,18 +12,32 @@ type s3Error struct {
 	code, message string
 }
 
-var (
-	noToken      = s3Error{http.StatusForbidden, "InvalidAccessKeyId", "The Access Key Id you provided does not exist in our records."}
-	badToken     = s3Error{http.StatusForbidden, "AccessDenied", "signature verification failed"}
-	putDenied    = s3Error{http.StatusForbidden, "AccessDenied", "new row violates row-level security policy"}
-	deleteDenied = s3Error{http.StatusForbidden, "AccessDenied", "Access denied"}
-	noObject     = s3Error{http.StatusNotFound, "NoSuchKey", "Object not found"}
-	tooLarge     = s3Error{http.StatusRequestEntityTooLarge, "EntityTooLarge", "The object exceeded the maximum allowed size"}
-	s3Failed     = s3Error{http.StatusInternalServerError, "InternalError", "Internal Server Error"}
-)
+func noToken() s3Error {
+	return s3Error{http.StatusForbidden, "InvalidAccessKeyId", "The Access Key Id you provided does not exist in our records."}
+}
+
+func badToken() s3Error {
+	return s3Error{http.StatusForbidden, "AccessDenied", "signature verification failed"}
+}
+
+func putDenied() s3Error {
+	return s3Error{http.StatusForbidden, "AccessDenied", "new row violates row-level security policy"}
+}
+
+func deleteDenied() s3Error { return s3Error{http.StatusForbidden, "AccessDenied", "Access denied"} }
+
+func noObject() s3Error { return s3Error{http.StatusNotFound, "NoSuchKey", "Object not found"} }
+
+func tooLarge() s3Error {
+	return s3Error{http.StatusRequestEntityTooLarge, "EntityTooLarge", "The object exceeded the maximum allowed size"}
+}
+
+func s3Failed() s3Error {
+	return s3Error{http.StatusInternalServerError, "InternalError", "Internal Server Error"}
+}
 
 func (e s3Error) send(w http.ResponseWriter, resource string) {
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(e.status)
-	io.WriteString(w, xmlHead+resource+"</Resource><Code>"+e.code+"</Code><Message>"+e.message+"</Message></Error>")
+	_, _ = io.WriteString(w, xmlHead+resource+"</Resource><Code>"+e.code+"</Code><Message>"+e.message+"</Message></Error>")
 }

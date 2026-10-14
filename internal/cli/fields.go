@@ -28,7 +28,7 @@ func askFields(c *cobra.Command, k kind, old map[string]string) (map[string]stri
 
 func askText(c *cobra.Command, k kind, vals []string) error {
 	if err := terminal(c.InOrStdin()); err == nil {
-		fmt.Fprintln(c.ErrOrStderr(), k.fields[0].label+", конец ввода Ctrl-D:")
+		_, _ = fmt.Fprintln(c.ErrOrStderr(), k.fields[0].label+", конец ввода Ctrl-D:")
 	}
 	text, err := io.ReadAll(c.InOrStdin())
 	if err != nil {

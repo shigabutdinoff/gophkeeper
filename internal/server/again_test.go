@@ -35,7 +35,7 @@ func newProxy(t *testing.T, target string) *proxy {
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err, "порт посредника не занят")
 	p := &proxy{addr: l.Addr().String()}
-	t.Cleanup(func() { l.Close(); p.cut(0) })
+	t.Cleanup(func() { _ = l.Close(); p.cut(0) })
 	go func() {
 		for {
 			c, err := l.Accept()
@@ -54,24 +54,24 @@ func (p *proxy) pipe(c net.Conn, target string) {
 	p.mu.Unlock()
 	if refused {
 		head := make([]byte, 8)
-		c.SetReadDeadline(time.Now().Add(time.Second))
+		_ = c.SetReadDeadline(time.Now().Add(time.Second))
 		if _, err := io.ReadFull(c, head); err == nil && binary.BigEndian.Uint32(head[4:]) != cancelCode {
 			p.refused.Add(1)
 		}
-		c.Close()
+		_ = c.Close()
 		return
 	}
 	s, err := net.Dial("tcp", target)
 	if err != nil {
-		c.Close()
+		_ = c.Close()
 		return
 	}
 	p.mu.Lock()
 	p.open = append(p.open, c, s)
 	p.mu.Unlock()
-	go func() { io.Copy(s, c); s.Close() }()
-	io.Copy(c, s)
-	c.Close()
+	go func() { _, _ = io.Copy(s, c); _ = s.Close() }()
+	_, _ = io.Copy(c, s)
+	_ = c.Close()
 }
 
 func (p *proxy) cut(d time.Duration) {
@@ -79,7 +79,7 @@ func (p *proxy) cut(d time.Duration) {
 	defer p.mu.Unlock()
 	p.until = time.Now().Add(d)
 	for _, c := range p.open {
-		c.Close()
+		_ = c.Close()
 	}
 	p.open = nil
 }
@@ -97,11 +97,11 @@ func TestAgainShortOutage(t *testing.T) {
 	p, r := through(t)
 	anna := r.user(t)
 	r.put(t, anna.User.ID, "почта")
-	p.cut(pauses[0] + pauses[1]/2)
+	p.cut(testPauses()[0] + testPauses()[1]/2)
 	status, body := r.records(t, listQuery, anna.Access)
 	assert.Equal(t, http.StatusOK, status, "список во время короткого сбоя базы отклонён: %s", body)
 	assert.Len(t, list(t, body), 1, "список во время сбоя базы неполный")
-	p.cut(pauses[0] + pauses[1]/2)
+	p.cut(testPauses()[0] + testPauses()[1]/2)
 	status, body = r.refresh(t, anna.Refresh)
 	assert.Equal(t, http.StatusOK, status, "продление во время короткого сбоя базы отклонено: %s", body)
 	assert.NotEmpty(t, parse(t, body).Access, "продление не выдало токен входа")
@@ -134,17 +134,17 @@ func TestAgainLongOutage(t *testing.T) {
 		assert.EqualValues(t, 1, p.refused.Load()-before, "запрос повторялся: %s", name)
 	}
 	client := r.client()
-	client.Timeout = pauses[0] / 2
+	client.Timeout = testPauses()[0] / 2
 	req, err := http.NewRequest(http.MethodGet, "https://"+r.addr+"/rest/v1/records"+listQuery, nil)
 	require.NoError(t, err, "запрос не собран")
 	req.Header = http.Header{"Apikey": {"app-key"}, "Authorization": {"Bearer " + anna.Access}}
 	resp, err := client.Do(req)
 	if err == nil {
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	}
 	require.Error(t, err, "запрос не оборван клиентом")
 	at := p.refused.Load()
-	time.Sleep(pauses[0])
+	time.Sleep(testPauses()[0])
 	assert.Equal(t, at, p.refused.Load(), "сервер повторял после обрыва запроса клиентом")
 }
 
@@ -155,7 +155,7 @@ func TestAgainOtherError(t *testing.T) {
 	began := time.Now()
 	status, body := r.records(t, listQuery, anna.Access)
 	assert.Equal(t, answer(http.StatusInternalServerError, internal), answer(status, body), "ошибка базы не получила общий отказ")
-	assert.Less(t, time.Since(began), pauses[0], "ошибка не из списка повторялась")
+	assert.Less(t, time.Since(began), testPauses()[0], "ошибка не из списка повторялась")
 }
 
 func TestLost(t *testing.T) {

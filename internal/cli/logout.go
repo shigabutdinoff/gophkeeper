@@ -27,7 +27,7 @@ func logoutCmd() *cobra.Command {
 			return err
 		}
 		if queue.Kept() {
-			fmt.Fprintln(c.ErrOrStderr(), "На устройстве остались неотправленные изменения, они уйдут после следующего входа.")
+			_, _ = fmt.Fprintln(c.ErrOrStderr(), "На устройстве остались неотправленные изменения, они уйдут после следующего входа.")
 		}
 		return report(c, "Выход выполнен.")
 	}

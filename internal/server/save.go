@@ -7,14 +7,11 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-var (
-	owner    = clause.Returning{Columns: []clause.Column{{Name: "user_id"}}}
-	inserted = clause.Returning{Columns: []clause.Column{{Name: "user_id"}, {Name: "xmax = 0 AS inserted", Raw: true}}}
-	upsert   = clause.OnConflict{Columns: []clause.Column{{Name: "user_id"}, {Name: "id"}},
-		DoUpdates: append(clause.AssignmentColumns([]string{"note", "secret"}), clause.Assignment{Column: clause.Column{Name: "updated_at"}, Value: gorm.Expr("now()")})}
-)
-
 func (a *auth) save(r *http.Request, in stored, where map[string]any) ([]stored, error) {
+	owner := clause.Returning{Columns: []clause.Column{{Name: "user_id"}}}
+	inserted := clause.Returning{Columns: []clause.Column{{Name: "user_id"}, {Name: "xmax = 0 AS inserted", Raw: true}}}
+	upsert := clause.OnConflict{Columns: []clause.Column{{Name: "user_id"}, {Name: "id"}},
+		DoUpdates: append(clause.AssignmentColumns([]string{"note", "secret"}), clause.Assignment{Column: clause.Column{Name: "updated_at"}, Value: gorm.Expr("now()")})}
 	db := a.db.WithContext(r.Context())
 	var rows []stored
 	switch r.Method {

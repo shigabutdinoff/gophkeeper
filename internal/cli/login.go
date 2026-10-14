@@ -37,7 +37,7 @@ func entered(c *cobra.Command, saved bool, err error, done string) error {
 		return err
 	}
 	if !saved {
-		fmt.Fprintln(c.ErrOrStderr(), "Системное хранилище секретов недоступно, пароль будет запрашиваться при каждой команде с данными.")
+		_, _ = fmt.Fprintln(c.ErrOrStderr(), "Системное хранилище секретов недоступно, пароль будет запрашиваться при каждой команде с данными.")
 	}
 	return report(c, done)
 }

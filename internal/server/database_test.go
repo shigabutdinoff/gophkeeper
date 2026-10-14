@@ -47,7 +47,7 @@ func connect(t *testing.T, dsn string) *pgx.Conn {
 	t.Helper()
 	conn, err := pgx.Connect(context.Background(), dsn)
 	require.NoError(t, err, "база не открыта")
-	t.Cleanup(func() { conn.Close(context.Background()) })
+	t.Cleanup(func() { _ = conn.Close(context.Background()) })
 	return conn
 }
 
@@ -61,7 +61,7 @@ func database(t *testing.T) string {
 	conn := connect(t, base)
 	_, err := conn.Exec(context.Background(), "CREATE SCHEMA "+schema)
 	require.NoError(t, err, "схема не создана")
-	t.Cleanup(func() { conn.Exec(context.Background(), "DROP SCHEMA "+schema+" CASCADE") })
+	t.Cleanup(func() { _, _ = conn.Exec(context.Background(), "DROP SCHEMA "+schema+" CASCADE") })
 	u, err := url.Parse(base)
 	require.NoError(t, err, "адрес базы не разобран")
 	q := u.Query()
@@ -83,7 +83,7 @@ func (r *running) send(t *testing.T, method, path, apikey string, body []byte) (
 	}
 	resp, err := r.client().Do(req)
 	require.NoError(t, err, "сервер не ответил")
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	got, err := io.ReadAll(resp.Body)
 	require.NoError(t, err, "ответ не прочитан")
 	return resp.StatusCode, string(got), resp.Header

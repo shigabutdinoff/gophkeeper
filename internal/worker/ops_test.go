@@ -41,12 +41,12 @@ func TestRunDeletes(t *testing.T) {
 func TestRunSkipsEditOfDeleted(t *testing.T) {
 	q := queuetest.New(t)
 	js, _ := q.Run(t, false)
-	setVar(t, &ackWait, 300*time.Millisecond)
+	tune := tuning{ackWait: 300 * time.Millisecond}
 	f := newFake(t)
 	id := uuid.NewV7().String()
 	seq := send(t, q, change(t, anna, id, "s3cret"), operation(t, anna, "delete", id, "", ""),
 		operation(t, anna, "edit", id, "почта", "n3w-s3cret"))
-	run(t, js, f.server())
+	run(t, js, f.server(tune))
 	acked(t, js, seq)
 	_, rows := f.snapshot()
 	assert.Empty(t, rows, "удалённая запись вернулась")
@@ -54,7 +54,7 @@ func TestRunSkipsEditOfDeleted(t *testing.T) {
 	assert.Never(t, func() bool {
 		info := consumerInfo(t, js)
 		return info == nil || info.NumRedelivered > 0 || info.NumAckPending > 0
-	}, 3*ackWait, 50*time.Millisecond, "пропущенная правка доставлена повторно")
+	}, 3*tune.ackWait, 50*time.Millisecond, "пропущенная правка доставлена повторно")
 	skipped := f.log.lines("пропущено")
 	for _, l := range f.log.lines("") {
 		assert.NotContains(t, l, "n3w-s3cret", "журнал содержит секрет")
@@ -84,7 +84,7 @@ func TestRunRetriesMissingTable(t *testing.T) {
 	f.reply = func(n int, w http.ResponseWriter) bool {
 		if n == 0 {
 			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte(`{"code":"PGRST205"}`))
+			_, _ = w.Write([]byte(`{"code":"PGRST205"}`))
 			return true
 		}
 		return false
@@ -101,19 +101,19 @@ func TestRunRetriesMissingTable(t *testing.T) {
 func TestRunSkipsMissingOwner(t *testing.T) {
 	q := queuetest.New(t)
 	js, _ := q.Run(t, false)
-	setVar(t, &ackWait, 300*time.Millisecond)
+	tune := tuning{ackWait: 300 * time.Millisecond}
 	f := newFake(t)
 	f.reply = func(n int, w http.ResponseWriter) bool {
 		if n == 0 {
 			w.Header().Set("Proxy-Status", "PostgREST; error=23503")
 			w.WriteHeader(http.StatusConflict)
-			w.Write([]byte(`{"code":"23503","message":"s3cret"}`))
+			_, _ = w.Write([]byte(`{"code":"23503","message":"s3cret"}`))
 		}
 		return n == 0
 	}
 	id := uuid.NewV7().String()
 	seq := send(t, q, change(t, boris, id, "s3cret"), change(t, anna, id, "верный"))
-	run(t, js, f.server())
+	run(t, js, f.server(tune))
 	acked(t, js, seq)
 	_, rows := f.snapshot()
 	assert.Equal(t, map[[2]string]string{{anna, id}: "пометка/" + b64("верный")}, rows, "изменение Анны не применено после удалённого владельца")
@@ -121,6 +121,6 @@ func TestRunSkipsMissingOwner(t *testing.T) {
 	assert.Never(t, func() bool {
 		info := consumerInfo(t, js)
 		return info == nil || info.NumRedelivered > 0 || info.NumAckPending > 0
-	}, 3*ackWait, 50*time.Millisecond, "пропущенное изменение доставлено повторно")
+	}, 3*tune.ackWait, 50*time.Millisecond, "пропущенное изменение доставлено повторно")
 	snaps.MatchSnapshot(t, strings.ReplaceAll(strings.Join(f.log.lines("пропущено"), "\n"), id, "<id>"))
 }

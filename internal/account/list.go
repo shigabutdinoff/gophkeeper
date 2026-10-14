@@ -8,7 +8,7 @@ import (
 	"github.com/shigabutdinoff/gophkeeper/internal/config"
 )
 
-var pageSize = 100
+const pageSize = 100
 
 // List возвращает записи владельца токена доступа access с секретами в
 // порядке создания, читая их страницами. Занятый сервер опрашивается

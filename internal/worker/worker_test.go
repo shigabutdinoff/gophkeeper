@@ -47,9 +47,9 @@ func TestRunRetriesServer(t *testing.T) {
 			w.Header().Set("Content-Type", "application/json")
 			w.Header().Set("Proxy-Status", "PostgREST; error=PGRST301")
 			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte(`{"code":"PGRST301","message":"s3cret"}`))
+			_, _ = w.Write([]byte(`{"code":"PGRST301","message":"s3cret"}`))
 		case 2:
-			w.Write([]byte("<html>s3cret</html>"))
+			_, _ = w.Write([]byte("<html>s3cret</html>"))
 		case 3:
 			w.WriteHeader(http.StatusNoContent)
 		case 4:
@@ -118,7 +118,7 @@ func TestRunRedelivery(t *testing.T) {
 func TestRunDropsBroken(t *testing.T) {
 	q := queuetest.New(t)
 	js, _ := q.Run(t, false)
-	setVar(t, &ackWait, 300*time.Millisecond)
+	tune := tuning{ackWait: 300 * time.Millisecond}
 	f := newFake(t)
 	id := uuid.NewV7().String()
 	nameless := change(t, anna, id, "s3cret")
@@ -127,7 +127,7 @@ func TestRunDropsBroken(t *testing.T) {
 	text.Data = []byte("s3cret")
 	seq := send(t, q, nameless, text, operation(t, anna, "drop", id, "", "s3cret"), noted(t, anna, id, "a\x00", "s3cret"),
 		change(t, anna, id, "верный"))
-	run(t, js, f.server())
+	run(t, js, f.server(tune))
 	acked(t, js, seq)
 	calls, rows := f.snapshot()
 	assert.Len(t, calls, 1, "сервер вызван для неразборчивых изменений")
@@ -135,7 +135,7 @@ func TestRunDropsBroken(t *testing.T) {
 	assert.Never(t, func() bool {
 		info := consumerInfo(t, js)
 		return info == nil || info.NumRedelivered > 0 || info.NumAckPending > 0
-	}, 3*ackWait, 50*time.Millisecond, "отброшенное изменение доставлено повторно")
+	}, 3*tune.ackWait, 50*time.Millisecond, "отброшенное изменение доставлено повторно")
 	dropped := f.log.lines("отброшено")
 	assert.Len(t, dropped, 4, "в журнале не четыре отброшенных изменения")
 	for _, l := range f.log.lines("") {

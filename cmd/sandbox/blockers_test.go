@@ -22,7 +22,7 @@ func TestStreamFreesHandled(t *testing.T) {
 	t.Parallel()
 	q := startQueue(t)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Write([]byte(`[{"user_id":"` + anna + `"}]`))
+		_, _ = w.Write([]byte(`[{"user_id":"` + anna + `"}]`))
 	}))
 	t.Cleanup(srv.Close)
 	ctx, cancel := context.WithCancel(context.Background())

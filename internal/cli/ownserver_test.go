@@ -43,11 +43,11 @@ func ownDatabase(t *testing.T) string {
 	}
 	conn, err := pgx.Connect(context.Background(), base)
 	require.NoError(t, err, "база не открыта")
-	t.Cleanup(func() { conn.Close(context.Background()) })
+	t.Cleanup(func() { _ = conn.Close(context.Background()) })
 	schema := "t_" + strings.ToLower(rand.Text())
 	_, err = conn.Exec(context.Background(), "CREATE SCHEMA "+schema)
 	require.NoError(t, err, "схема не создана")
-	t.Cleanup(func() { conn.Exec(context.Background(), "DROP SCHEMA "+schema+" CASCADE") })
+	t.Cleanup(func() { _, _ = conn.Exec(context.Background(), "DROP SCHEMA "+schema+" CASCADE") })
 	u, err := url.Parse(base)
 	require.NoError(t, err, "адрес базы не разобран")
 	q := u.Query()
@@ -92,7 +92,7 @@ func startOwnOn(t *testing.T, dsn string) config.Settings {
 	setVar(t, &httpClient, &http.Client{Timeout: 5 * time.Second})
 	resp, err := web.Client().Get("https://" + l.Addr().String() + "/auth/v1/.well-known/jwks.json")
 	require.NoError(t, err, "свой сервер не запустился")
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	return config.Settings{Server: "https://" + l.Addr().String(), AppKey: "ключ-приложения", ServerCert: cert}
 }
 

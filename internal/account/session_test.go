@@ -47,7 +47,7 @@ func startGotrue(t *testing.T, fail bool) *gotrue {
 		defer g.mu.Unlock()
 		g.calls = append(g.calls, r.URL.Path+"?"+r.URL.RawQuery)
 		var body map[string]string
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		g.bodies = append(g.bodies, body)
 		switch {
 		case g.busy > 0:
@@ -59,13 +59,13 @@ func startGotrue(t *testing.T, fail bool) *gotrue {
 			w.WriteHeader(http.StatusUnauthorized)
 		case g.revoked && body["refresh_token"] != "":
 			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(`{"code":400,"error_code":"refresh_token_not_found"}`))
+			_, _ = w.Write([]byte(`{"code":400,"error_code":"refresh_token_not_found"}`))
 		case r.URL.Path == "/auth/v1/logout":
 			g.bearer = r.Header.Get("Authorization")
 			w.WriteHeader(http.StatusNoContent)
 		case body["password"] == wrong:
 			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(`{"code":400,"error_code":"invalid_credentials","msg":"Invalid login credentials"}`))
+			_, _ = w.Write([]byte(`{"code":400,"error_code":"invalid_credentials","msg":"Invalid login credentials"}`))
 		default:
 			g.refresh++
 			_ = json.NewEncoder(w).Encode(map[string]any{"access_token": g.access, "refresh_token": "обновление-" + string(rune('0'+g.refresh)),
@@ -202,7 +202,7 @@ func TestLogoutWithoutServer(t *testing.T) {
 	g := startGotrue(t, false)
 	_, err := Login(t.Context(), g.client, g.settings, "anna@example.com", "пароль-Анны")
 	require.NoError(t, err, "вход не прошёл")
-	require.NoError(t, keep(record{Server: "https://127.0.0.1:1", Data: "д", Refresh: "о"}), "запись не сохранена")
+	require.NoError(t, keep(record{Server: "https://127.0.0.1:1", Data: "д", Refresh: "о"}, keyring.Set), "запись не сохранена")
 	require.NoError(t, Logout(t.Context(), g.client, g.settings), "выход без сервера не прошёл")
 	assertForgotten(t, g)
 }

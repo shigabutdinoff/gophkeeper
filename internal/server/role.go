@@ -11,7 +11,15 @@ import (
 
 const denied = `{"code":"42501","details":null,"hint":"Grant the required privileges to the current role with: GRANT %s ON public.records TO %s;","message":"permission denied for table records"}`
 
-var grants = map[string]string{http.MethodPost: "INSERT, UPDATE", http.MethodPatch: "UPDATE", http.MethodDelete: "DELETE"}
+func grant(method string) string {
+	switch method {
+	case http.MethodPost:
+		return "INSERT, UPDATE"
+	case http.MethodPatch:
+		return "UPDATE"
+	}
+	return "DELETE"
+}
 
 func (a *auth) writer(w http.ResponseWriter, r *http.Request, s Settings) bool {
 	token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
@@ -20,13 +28,13 @@ func (a *auth) writer(w http.ResponseWriter, r *http.Request, s Settings) bool {
 		return true
 	case token == "" || subtle.ConstantTimeCompare([]byte(token), []byte(s.AppKey)) == 1:
 		w.Header().Set("WWW-Authenticate", "Bearer")
-		refuse(w, http.StatusUnauthorized, "SELECT, "+grants[r.Method], "anon")
+		refuse(w, http.StatusUnauthorized, "SELECT, "+grant(r.Method), "anon")
 	default:
 		if _, err := a.bearer(r, request.AuthorizationHeaderExtractor); err != nil {
 			respond(w, http.StatusUnauthorized, jwtInvalid)
 			return false
 		}
-		refuse(w, http.StatusForbidden, grants[r.Method], "authenticated")
+		refuse(w, http.StatusForbidden, grant(r.Method), "authenticated")
 	}
 	return false
 }

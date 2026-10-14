@@ -11,9 +11,8 @@ import (
 	"github.com/shigabutdinoff/gophkeeper/internal/snapstest"
 )
 
-var serialScripts sync.Mutex
-
 func TestScripts(t *testing.T) {
+	var serialScripts sync.Mutex
 	testscript.Run(t, testscript.Params{
 		Dir:                 "testdata",
 		UpdateScripts:       snapstest.UpdateScripts(),

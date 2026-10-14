@@ -114,7 +114,7 @@ func ok(w http.ResponseWriter, r *http.Request) {
 
 func okAs(access string) http.HandlerFunc {
 	return func(w http.ResponseWriter, _ *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{"access_token": access, "refresh_token": "обновление", "user": map[string]string{"id": annaID}})
+		_ = json.NewEncoder(w).Encode(map[string]any{"access_token": access, "refresh_token": "обновление", "user": map[string]string{"id": annaID}})
 	}
 }
 
@@ -135,7 +135,7 @@ func TestRegisterHidesPassword(t *testing.T) {
 func TestRegisterHidesServerDetails(t *testing.T) {
 	srv := startServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error_code":"secret-detail","msg":"secret-detail"}`))
+		_, _ = w.Write([]byte(`{"error_code":"secret-detail","msg":"secret-detail"}`))
 	})
 	settingsFile(t, srv.URL, "ключ-приложения")
 	out, errOut, err := executeIn(keyboard(t, true, typedPassword), "register")

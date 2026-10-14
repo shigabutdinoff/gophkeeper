@@ -47,7 +47,7 @@ func TestLoginErrors(t *testing.T) {
 	keyring.MockInit()
 	srv := startServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error_code":"invalid_credentials"}`))
+		_, _ = w.Write([]byte(`{"error_code":"invalid_credentials"}`))
 	})
 	settingsFile(t, srv.URL, "ключ-приложения")
 	out, _, err := executeIn(keyboard(t, true, typedPassword), "login")

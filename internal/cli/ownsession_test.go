@@ -62,7 +62,7 @@ func ownQueue(t *testing.T, s config.Settings) (config.Settings, jetstream.Strea
 	require.NoError(t, account.Trust(client, s.ServerCert), "сертификату сервера нет доверия")
 	stop, err := access.Serve(t.Context(), js.Conn(), q.Seed, "", s.Server, client, q.Server)
 	require.NoError(t, err, "служба доступа не получила ключи своего сервера")
-	t.Cleanup(func() { stop() })
+	t.Cleanup(func() { _ = stop() })
 	c := q.Client
 	c.Server, c.AppKey, c.ServerCert = s.Server, s.AppKey, s.ServerCert
 	return c, stream
@@ -72,7 +72,7 @@ func rename(t *testing.T, dsn, from, to string) {
 	t.Helper()
 	conn, err := pgx.Connect(context.Background(), dsn)
 	require.NoError(t, err, "база не открыта")
-	defer conn.Close(context.Background())
+	defer func() { _ = conn.Close(context.Background()) }()
 	_, err = conn.Exec(context.Background(), "ALTER TABLE "+from+" RENAME TO "+to)
 	require.NoError(t, err, "таблица %s не переименована", from)
 }

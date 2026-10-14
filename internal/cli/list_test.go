@@ -194,7 +194,7 @@ func TestListSlowPages(t *testing.T) {
 func TestListHidesServerDetails(t *testing.T) {
 	serveRecords(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"code":"secret-detail","message":"secret-detail"}`))
+		_, _ = w.Write([]byte(`{"code":"secret-detail","message":"secret-detail"}`))
 	})
 	login(t)
 	for _, args := range [][]string{{"list"}, {"list", "0199b2c4-6f1e-7a3b-9c2d-1e2f3a4b5c6d"}} {
@@ -231,10 +231,12 @@ func TestListLoggedOut(t *testing.T) {
 	assert.ErrorIs(t, err, account.ErrLoggedOut, "список без входа")
 }
 
-var codes = map[string]string{"type": "text", "text": "abcd-1234\nefgh-5678\n\nijkl-9012"}
+func codes() map[string]string {
+	return map[string]string{"type": "text", "text": "abcd-1234\nefgh-5678\n\nijkl-9012"}
+}
 
 func TestListTypes(t *testing.T) {
-	recs := []stored{sealed(t, "anna", "s3cret", "почта"), sealedAs(t, codes, "GitHub, коды восстановления"), sealedAs(t, card, "Сбербанк, зарплатная")}
+	recs := []stored{sealed(t, "anna", "s3cret", "почта"), sealedAs(t, codes(), "GitHub, коды восстановления"), sealedAs(t, card(), "Сбербанк, зарплатная")}
 	serveRecords(t, replyJSON(t, recs))
 	login(t)
 	out, _, err := executeIn(keyboard(t, true, ""), "list")
@@ -249,17 +251,17 @@ func TestListTypes(t *testing.T) {
 }
 
 func TestListText(t *testing.T) {
-	rec := sealedAs(t, codes, "GitHub, коды восстановления")
+	rec := sealedAs(t, codes(), "GitHub, коды восстановления")
 	serveRecords(t, replyJSON(t, []stored{rec}))
 	login(t)
 	out, _, err := executeIn(keyboard(t, true, ""), "list", rec.ID)
 	require.NoError(t, err, "текст не получен")
 	snaps.MatchSnapshot(t, out)
-	assert.True(t, strings.HasSuffix(out, "\nТекст:\n"+codes["text"]+"\n"), "текст изменён")
+	assert.True(t, strings.HasSuffix(out, "\nТекст:\n"+codes()["text"]+"\n"), "текст изменён")
 }
 
 func TestListCard(t *testing.T) {
-	rec := sealedAs(t, card, "Сбербанк, зарплатная")
+	rec := sealedAs(t, card(), "Сбербанк, зарплатная")
 	srv := serveRecords(t, replyJSON(t, []stored{rec}))
 	login(t)
 	keyring.MockInit()

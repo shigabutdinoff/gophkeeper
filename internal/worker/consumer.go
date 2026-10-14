@@ -3,7 +3,6 @@ package worker
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
@@ -13,11 +12,6 @@ import (
 
 const durable = "gophkeeper-worker"
 
-var (
-	ackWait   = 30 * time.Second
-	heartbeat = 5 * time.Second
-)
-
 func consume(ctx, work context.Context, js jetstream.JetStream, s Server) error {
 	filter := record.Topic("*")
 	stream, err := js.StreamNameBySubject(ctx, filter)
@@ -25,12 +19,12 @@ func consume(ctx, work context.Context, js jetstream.JetStream, s Server) error 
 		return err
 	}
 	c, err := js.CreateOrUpdateConsumer(ctx, stream, jetstream.ConsumerConfig{Durable: durable, FilterSubject: filter,
-		AckPolicy: jetstream.AckExplicitPolicy, MaxAckPending: 1, AckWait: ackWait})
+		AckPolicy: jetstream.AckExplicitPolicy, MaxAckPending: 1, AckWait: s.tuned().ackWait})
 	if err != nil {
 		return err
 	}
 	for {
-		msg, err := c.Next(jetstream.FetchContext(ctx), jetstream.FetchHeartbeat(heartbeat))
+		msg, err := c.Next(jetstream.FetchContext(ctx), jetstream.FetchHeartbeat(s.tuned().heartbeat))
 		switch {
 		case err == nil:
 			handle(work, js, msg, s)

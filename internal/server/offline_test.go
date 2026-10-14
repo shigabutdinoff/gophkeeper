@@ -27,7 +27,7 @@ func offline(t *testing.T) *auth {
 	require.NoError(t, err, "база не открыта")
 	db, err := a.db.DB()
 	require.NoError(t, err, "пул не получен")
-	t.Cleanup(func() { db.Close() })
+	t.Cleanup(func() { _ = db.Close() })
 	return a
 }
 
@@ -56,7 +56,7 @@ func TestOfflineRoutes(t *testing.T) {
 		resp, err := srv.Client().Do(req)
 		require.NoError(t, err, "сервер не ответил: %s", name)
 		body, err := io.ReadAll(resp.Body)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		require.NoError(t, err, "ответ не прочитан: %s", name)
 		assert.Equal(t, c.status, resp.StatusCode, "статус не тот: %s: %s", name, body)
 		if c.code != "" {
@@ -109,7 +109,7 @@ func TestOfflineRecords(t *testing.T) {
 		resp, err := srv.Client().Do(req)
 		require.NoError(t, err, "сервер не ответил: %s", name)
 		body, err := io.ReadAll(resp.Body)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		require.NoError(t, err, "ответ не прочитан: %s", name)
 		assert.Equal(t, answer(c.status, c.body), answer(resp.StatusCode, string(body)), "ответ не тот: %s", name)
 	}

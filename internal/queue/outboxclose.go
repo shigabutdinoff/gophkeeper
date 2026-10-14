@@ -20,7 +20,7 @@ func (o *Outbox) Close() {
 		o.srv.Shutdown()
 	}
 	if empty {
-		os.RemoveAll(o.dir)
+		_ = os.RemoveAll(o.dir)
 	}
 	o.unlock()
 }

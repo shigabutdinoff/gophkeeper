@@ -7,14 +7,11 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"time"
 
 	"github.com/go-resty/resty/v2"
 
 	"github.com/shigabutdinoff/gophkeeper/internal/config"
 )
-
-var retryWait, retryMax = 200 * time.Millisecond, 2 * time.Second
 
 func post(ctx context.Context, client *http.Client, s config.Settings,
 	path, bearer string, body, reply any) error {
@@ -31,7 +28,7 @@ func call(ctx context.Context, client *http.Client, s config.Settings, retry boo
 	}
 	c := resty.NewWithClient(client).SetResponseBodyLimit(1 << 24).SetBaseURL(s.Server).SetLogger(quiet{})
 	if retry {
-		c.SetRetryCount(3).SetRetryWaitTime(retryWait).SetRetryMaxWaitTime(retryMax).AddRetryCondition(busy)
+		c.SetRetryCount(3).SetRetryWaitTime(retryWait()).SetRetryMaxWaitTime(5 * retryWait()).AddRetryCondition(busy)
 	}
 	resp, err := c.R().SetContext(ctx).SetHeader("apikey", s.AppKey).SetBody(body).SetError(&fail).
 		ForceContentType("application/json").SetAuthToken(bearer).SetResult(reply).Execute(method, path)

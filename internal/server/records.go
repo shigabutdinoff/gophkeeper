@@ -25,7 +25,7 @@ func (a *auth) records(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	list := []entry{}
-	err = again(r.Context(), func() error {
+	err = a.again(r.Context(), func() error {
 		return a.db.WithContext(r.Context()).Table("records").Select("id", "note", "secret").Where("user_id = ?", claims.Subject).
 			Where(where).Order("id").Limit(limit).Find(&list).Error
 	})

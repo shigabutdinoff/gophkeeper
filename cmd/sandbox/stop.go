@@ -20,7 +20,7 @@ func stop(ctx context.Context, state string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	nc, err := nats.Connect(sandboxQueue, admin, nats.NoReconnect())
+	nc, err := nats.Connect(sandboxQueue(), admin, nats.NoReconnect())
 	if notRunning(err) {
 		return false, nil
 	}
