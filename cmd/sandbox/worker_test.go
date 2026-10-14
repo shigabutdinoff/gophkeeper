@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"encoding/pem"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -71,4 +72,44 @@ func TestSandboxWorker(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("обработчик песочницы не остановился")
 	}
+}
+
+const annaRecord = "0199b5e4-0000-7000-8000-0000000000d1"
+
+func TestSandboxWorkerOwnDeletes(t *testing.T) {
+	q := queuetest.New(t)
+	q.Run(t, false)
+	var deleted atomic.Int32
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/auth/v1/.well-known/jwks.json":
+			q.JWKS(w, r)
+		case r.Method == http.MethodDelete && r.URL.Path == "/storage/v1/s3/files/"+anna+"/"+annaRecord:
+			deleted.Add(1)
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodDelete && r.URL.Path == "/rest/v1/records" && r.Header.Get("apikey") == "служебный ключ":
+			deleted.Add(1)
+			w.Write([]byte(`[{"user_id":"` + anna + `"}]`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+	q.Supabase = srv.URL
+	state := t.TempDir()
+	cert := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: srv.Certificate().Raw})
+	for name, data := range map[string]string{adminUser: q.Admin.QueuePass, caFile: q.Admin.QueueCA + string(cert), serviceKeyFile: "служебный ключ", appKeyFile: "ключ"} {
+		require.NoError(t, os.WriteFile(filepath.Join(state, name), []byte(data), 0o600), "файл песочницы не записан")
+	}
+	oldAddr, oldClient := ownAddr, workerClient
+	ownAddr, workerClient = srv.Listener.Addr().String(), &http.Client{}
+	t.Cleanup(func() { ownAddr, workerClient = oldAddr, oldClient })
+	ctx, cancel := context.WithCancel(context.Background())
+	done, err := runWorker(ctx, q.Server, state, q.Seed)
+	require.NoError(t, err, "обработчик песочницы своего сервера не запущен")
+	msg, err := record.Delete(anna, annaRecord)
+	require.NoError(t, err, "удаление не собрано")
+	_, err = queuetest.JetStream(t, q.Client, q.As(t, anna)).PublishMsg(t.Context(), msg)
+	require.NoError(t, err, "удаление не отправлено")
+	assert.Eventually(t, func() bool { return deleted.Load() == 2 }, 5*time.Second, 10*time.Millisecond, "удаление не дошло до своего сервера")
+	cancel()
+	require.NoError(t, done.Wait(), "обработчик песочницы остановился с ошибкой")
 }

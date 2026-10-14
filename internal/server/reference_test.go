@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"slices"
@@ -68,6 +69,16 @@ func reference(t *testing.T, name string) string {
 	raw, err := os.ReadFile(filepath.Join("testdata", name))
 	require.NoError(t, err, "эталон Supabase не прочитан")
 	return string(raw)
+}
+
+func headed(status int, h http.Header, body string) string {
+	var lines []string
+	for _, name := range []string{"proxy-status", "www-authenticate"} {
+		if v := h.Get(name); v != "" {
+			lines = append(lines, name+": "+v+"\n")
+		}
+	}
+	return strconv.Itoa(status) + "\n" + strings.Join(lines, "") + body
 }
 
 func answer(status int, body string) string {

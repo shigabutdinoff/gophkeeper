@@ -21,3 +21,13 @@ type session struct {
 	RefreshToken string
 	Account      account
 }
+
+type stored struct {
+	ID       string `json:"id"`
+	UserID   string `json:"user_id"`
+	Note     string `json:"note"`
+	Secret   string `json:"secret"`
+	Inserted bool   `json:"-" gorm:"->"`
+}
+
+func (stored) TableName() string { return "records" }

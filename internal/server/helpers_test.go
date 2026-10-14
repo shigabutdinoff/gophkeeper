@@ -18,12 +18,13 @@ import (
 )
 
 type running struct {
-	addr string
-	dsn  string
-	pool *x509.CertPool
-	stop context.CancelFunc
-	done chan struct{}
-	err  error
+	addr                string
+	dsn                 string
+	cert, key, tokenKey string
+	pool                *x509.CertPool
+	stop                context.CancelFunc
+	done                chan struct{}
+	err                 error
 }
 
 var serverLog io.Writer
@@ -60,16 +61,23 @@ func start(t *testing.T) *running {
 func startOn(t *testing.T, dsn, tokenKey string) *running {
 	t.Helper()
 	cert, key, pool := certFiles(t)
-	l, err := net.Listen("tcp", "127.0.0.1:0")
+	r := &running{addr: "127.0.0.1:0", dsn: dsn, cert: cert, key: key, tokenKey: tokenKey, pool: pool}
+	r.serve(t)
+	return r
+}
+
+func (r *running) serve(t *testing.T) {
+	t.Helper()
+	l, err := net.Listen("tcp", r.addr)
 	require.NoError(t, err, "порт не занят")
 	ctx, cancel := context.WithCancel(context.Background())
-	r := &running{addr: l.Addr().String(), dsn: dsn, pool: pool, stop: cancel, done: make(chan struct{})}
+	done := make(chan struct{})
+	r.addr, r.stop, r.done = l.Addr().String(), cancel, done
 	go func() {
-		defer close(r.done)
-		r.err = Serve(ctx, l, Settings{Cert: cert, Key: key, AppKey: "app-key", ServerKey: "service-key", TokenKey: tokenKey, Database: dsn, Log: serverLog})
+		defer close(done)
+		r.err = Serve(ctx, l, Settings{Cert: r.cert, Key: r.key, AppKey: "app-key", ServerKey: "service-key", TokenKey: r.tokenKey, Database: r.dsn, Log: serverLog})
 	}()
-	t.Cleanup(func() { cancel(); <-r.done })
-	return r
+	t.Cleanup(func() { cancel(); <-done })
 }
 
 func (r *running) wait(t *testing.T) error {

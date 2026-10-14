@@ -114,3 +114,13 @@ func TestOfflineRecords(t *testing.T) {
 		assert.Equal(t, answer(c.status, c.body), answer(resp.StatusCode, string(body)), "ответ не тот: %s", name)
 	}
 }
+
+func TestOfflineWrite(t *testing.T) {
+	srv := httptest.NewServer(offline(t).routes(Settings{AppKey: "app-key", ServerKey: "service-key"}))
+	t.Cleanup(srv.Close)
+	owner, id := uuid.New().String(), uuid.New().String()
+	for method, query := range map[string]string{http.MethodPost: putQuery, http.MethodPatch: ownedQuery(owner, id), http.MethodDelete: ownedQuery(owner, id)} {
+		status, body, _ := liveSupabase{server: srv.URL, client: srv.Client()}.send(t, method, "rest/v1/records"+query, writeHeader("service-key", "service-key"), fields(owner, id, "почта"))
+		assert.Equal(t, answer(http.StatusInternalServerError, internal), answer(status, body), "запись без базы не получила общий отказ: %s", method)
+	}
+}

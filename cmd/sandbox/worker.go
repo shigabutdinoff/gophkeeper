@@ -43,7 +43,7 @@ func runWorker(ctx context.Context, s *server.Server, state, seed string) (*errg
 		defer nc.Close()
 		defer stop()
 		return worker.Run(ctx, js, worker.Server{URL: string(c.Supabase.URL), Key: c.ServiceKey, Client: workerClient, Log: log.New(os.Stderr, "", log.LstdFlags),
-			Files: storage.New(workerClient, string(c.Supabase.URL), c.Supabase.Region, c.Supabase.Key, c.ServiceKey), Seed: seed})
+			Files: storage.New(workerClient, string(c.Supabase.URL), cmp.Or(c.Supabase.Region, "us-east-1"), c.Supabase.Key, c.ServiceKey), Seed: seed})
 	})
 	return &g, nil
 }

@@ -29,25 +29,32 @@ func (l liveSupabase) as(token string) liveSupabase {
 
 func (l liveSupabase) do(t *testing.T, method, path, bearer string, body any) (int, string) {
 	t.Helper()
+	h := http.Header{"Apikey": {l.app}}
+	if bearer != "" {
+		h.Set("apikey", bearer)
+		h.Set("Authorization", "Bearer "+bearer)
+	}
+	if l.user != "" {
+		h.Set("Authorization", "Bearer "+l.user)
+	}
+	status, got, _ := l.send(t, method, path, h, body)
+	return status, got
+}
+
+func (l liveSupabase) send(t *testing.T, method, path string, h http.Header, body any) (int, string, http.Header) {
+	t.Helper()
 	raw, err := json.Marshal(body)
 	require.NoError(t, err, "тело запроса не собрано")
 	req, err := http.NewRequest(method, strings.TrimSuffix(l.server, "/")+"/"+path, bytes.NewReader(raw))
 	require.NoError(t, err, "запрос не собран")
+	req.Header = h
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("apikey", l.app)
-	if bearer != "" {
-		req.Header.Set("apikey", bearer)
-		req.Header.Set("Authorization", "Bearer "+bearer)
-	}
-	if l.user != "" {
-		req.Header.Set("Authorization", "Bearer "+l.user)
-	}
 	resp, err := l.client.Do(req)
 	require.NoError(t, err, "Supabase не ответил")
 	defer resp.Body.Close()
 	got, err := io.ReadAll(resp.Body)
 	require.NoError(t, err, "ответ Supabase не прочитан")
-	return resp.StatusCode, string(got)
+	return resp.StatusCode, string(got), resp.Header
 }
 
 func matchReference(t *testing.T, name, got string) {
@@ -110,4 +117,42 @@ func liveRecords(t *testing.T, l liveSupabase, creds map[string]string) {
 	matchReference(t, "records_none.txt", answer(status, body))
 	status, body = l.as(spoil(s.Access)).do(t, http.MethodGet, "rest/v1/records?select=id,note,secret&order=id&limit=100", "", nil)
 	matchReference(t, "records_jwt_invalid.txt", answer(status, body))
+	liveWrites(t, l, s, id)
+}
+
+func writeHeader(key, token string) http.Header {
+	h := http.Header{"Apikey": {key}, "Prefer": {"return=representation,resolution=merge-duplicates"}}
+	if token != "" {
+		h.Set("Authorization", "Bearer "+token)
+	}
+	return h
+}
+
+func liveWrites(t *testing.T, l liveSupabase, s granted, id string) {
+	t.Helper()
+	owned := func(record string) string { return "rest/v1/records" + ownedQuery(s.User.ID, record) }
+	status, body, _ := l.send(t, http.MethodPost, "rest/v1/records"+putQuery, writeHeader(l.service, l.service), fields(s.User.ID, uuid.New().String(), "карта"))
+	matchReference(t, "write_created.txt", answer(status, masked(t, body)))
+	changed := fields(s.User.ID, id, "работа")
+	changed["secret"] = "bmV3"
+	status, body, _ = l.send(t, http.MethodPost, "rest/v1/records"+putQuery, writeHeader(l.service, l.service), changed)
+	matchReference(t, "write_merged.txt", answer(status, masked(t, body)))
+	status, body, _ = l.send(t, http.MethodPatch, owned(id), writeHeader(l.service, l.service), changed)
+	matchReference(t, "write_patched.txt", answer(status, masked(t, body)))
+	for method, path := range map[string]string{http.MethodPost: "rest/v1/records" + putQuery, http.MethodPatch: owned(id), http.MethodDelete: owned(id)} {
+		status, body, h := l.send(t, method, path, writeHeader(l.app, s.Access), changed)
+		matchReference(t, "write_denied_"+strings.ToLower(method)+".txt", headed(status, h, body))
+		status, body, h = l.send(t, method, path, writeHeader(l.app, ""), changed)
+		matchReference(t, "write_anonymous_"+strings.ToLower(method)+".txt", headed(status, h, body))
+		status, body, h = l.send(t, method, path, writeHeader(l.app, l.app), changed)
+		assert.Equal(t, reference(t, "write_anonymous_"+strings.ToLower(method)+".txt"), headed(status, h, body), "отказ с ключом приложения не равен отказу без токена")
+	}
+	status, body = l.as(s.Access).do(t, http.MethodGet, "rest/v1/records?select=note,secret&id=eq."+id, "", nil)
+	assert.Equal(t, answer(http.StatusOK, `[{"note":"работа","secret":"bmV3"}]`), answer(status, body), "прямая запись изменила запись")
+	status, body, _ = l.send(t, http.MethodPatch, owned(uuid.New().String()), writeHeader(l.service, l.service), changed)
+	matchReference(t, "write_none.txt", answer(status, body))
+	status, body, _ = l.send(t, http.MethodDelete, owned(id), writeHeader(l.service, l.service), nil)
+	matchReference(t, "write_deleted.txt", answer(status, masked(t, body)))
+	status, body, _ = l.send(t, http.MethodDelete, owned(id), writeHeader(l.service, l.service), nil)
+	assert.Equal(t, reference(t, "write_none.txt"), answer(status, body), "повторное удаление не равно эталону")
 }
