@@ -78,7 +78,7 @@ func TestSandboxSettings(t *testing.T) {
 		require.NoError(t, serr, "настройки песочницы не собраны")
 		ca := regexp.MustCompile(`(?s)-----BEGIN CERTIFICATE-----.*-----END CERTIFICATE-----`)
 		masked := ca.ReplaceAllString(string(data), "<ca>")
-		snaps.MatchSnapshot(t, strings.ReplaceAll(masked, ":"+strconv.Itoa(sandboxPort)+"\n", ":<port>\n"))
+		snaps.MatchSnapshot(t, strings.NewReplacer(":"+strconv.Itoa(sandboxPort)+"\n", ":<port>\n", ":"+strconv.Itoa(sandboxLeafPort)+"\n", ":<leaf>\n").Replace(masked))
 	})
 }
 

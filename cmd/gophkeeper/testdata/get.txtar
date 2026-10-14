@@ -33,6 +33,7 @@ server: https://example.invalid
 app_key: ключ-приложения
 region: eu-north-1
 queue: tls://127.0.0.1:1
+queue_leaf: tls://127.0.0.1:2
 -- noid.txt --
 Ошибка: укажите идентификатор записи
 -- nopath.txt --

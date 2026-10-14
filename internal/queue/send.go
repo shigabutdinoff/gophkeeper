@@ -14,7 +14,7 @@ import (
 const deadline = 10 * time.Second
 
 func session(ctx context.Context, s config.Settings, limit time.Duration, extra []nats.Option, do func(context.Context, *nats.Conn) error) error {
-	if err := Check(s); err != nil {
+	if _, err := options(s); err != nil {
 		return err
 	}
 	ctx, cancel := context.WithTimeout(ctx, limit)

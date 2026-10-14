@@ -204,7 +204,7 @@ func TestDeleteOfflineExpired(t *testing.T) {
 	srv, stream := queueFor(t, -time.Minute, replyJSON(t, []stored{}))
 	srv.Close()
 	out, _, err := executeIn(keyboard(t, true, "n3w-s3cret"), "delete", missing)
-	assert.EqualError(t, err, "сервер недоступен, изменение не сохранено, попробуйте позже", "удаление с истёкшим токеном принято")
-	assert.Empty(t, out, "при отказе напечатано подтверждение")
+	require.NoError(t, err, "удаление с истёкшим токеном не сохранено на устройстве")
+	assert.Contains(t, out, "сохранено на устройстве", "не сказано, что удаление ждёт отправки")
 	assert.Zero(t, queued(t, stream), "удаление с истёкшим токеном ушло в очередь")
 }

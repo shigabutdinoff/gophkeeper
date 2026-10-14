@@ -115,7 +115,7 @@ func TestOwnServer(t *testing.T) {
 	require.NoError(t, err, "адрес своего сервера не открыт")
 	_, err = ownServer(state)
 	assert.ErrorContains(t, err, "адрес своего сервера "+ownAddr+" не открыт: ", "занятый адрес открыт повторно")
-	opts, _, err := serverOptions(state, server.RANDOM_PORT)
+	opts, _, err := serverOptions(state, server.RANDOM_PORT, server.RANDOM_PORT)
 	require.NoError(t, err, "настройки очереди песочницы не собраны")
 	opts.NoSigs = true
 	queue := natstest.RunServer(opts)

@@ -1,12 +1,14 @@
 package cli
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
 
 	"github.com/shigabutdinoff/gophkeeper/internal/account"
 	"github.com/shigabutdinoff/gophkeeper/internal/config"
+	"github.com/shigabutdinoff/gophkeeper/internal/queue"
 )
 
 func logoutCmd() *cobra.Command {
@@ -23,6 +25,9 @@ func logoutCmd() *cobra.Command {
 		}
 		if err := account.Logout(c.Context(), httpClient, s); err != nil {
 			return err
+		}
+		if queue.Kept() {
+			fmt.Fprintln(c.ErrOrStderr(), "На устройстве остались неотправленные изменения, они уйдут после следующего входа.")
 		}
 		return report(c, "Выход выполнен.")
 	}

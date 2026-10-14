@@ -9,7 +9,7 @@ import (
 
 const handshakeSeconds float64 = 3
 
-func serverOptions(state string, port int) (*server.Options, string, error) {
+func serverOptions(state string, port, leaf int) (*server.Options, string, error) {
 	tlsConfig, err := server.GenTLSConfig(&server.TLSConfigOpts{
 		CertFile: filepath.Join(state, certFile), KeyFile: filepath.Join(state, keyFile),
 	})
@@ -30,11 +30,12 @@ func serverOptions(state string, port int) (*server.Options, string, error) {
 		NoSigs: true, JetStream: true, StoreDir: filepath.Join(state, "jetstream"), PidFile: filepath.Join(state, pidFile),
 		Users:       []*server.User{{Username: adminUser, Password: string(admin)}},
 		AuthCallout: &server.AuthCallout{Issuer: public, Account: server.DEFAULT_GLOBAL_ACCOUNT, AuthUsers: []string{adminUser}},
+		LeafNode:    server.LeafNodeOpts{Host: sandboxHost, Port: leaf, TLSConfig: tlsConfig, TLSTimeout: handshakeSeconds},
 	}, seed, nil
 }
 
 func launchQueue(state string) (*server.Server, string, error) {
-	opts, seed, err := serverOptions(state, sandboxPort)
+	opts, seed, err := serverOptions(state, sandboxPort, sandboxLeafPort)
 	if err != nil {
 		return nil, "", err
 	}

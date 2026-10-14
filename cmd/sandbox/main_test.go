@@ -17,25 +17,18 @@ import (
 const (
 	testPortEnv    = "SANDBOX_TEST_PORT"
 	testOwnPortEnv = "SANDBOX_TEST_OWN_PORT"
+	testLeafEnv    = "SANDBOX_TEST_LEAF_PORT"
 	testDBEnv      = "GOPHKEEPER_TEST_DATABASE"
 	testOwnDBEnv   = "SANDBOX_TEST_OWN_DATABASE"
 	testSchema     = "sandbox_test"
 )
 
 func TestMain(m *testing.M) {
-	port := os.Getenv(testPortEnv)
-	if port == "" {
-		port = freePort()
-		os.Setenv(testPortEnv, port)
-	}
+	port := freePort(testPortEnv)
 	sandboxPort, _ = strconv.Atoi(port)
 	sandboxQueue = "tls://" + net.JoinHostPort(sandboxHost, port)
-	own := os.Getenv(testOwnPortEnv)
-	if own == "" {
-		own = freePort()
-		os.Setenv(testOwnPortEnv, own)
-	}
-	ownAddr = net.JoinHostPort(sandboxHost, own)
+	sandboxLeafPort, _ = strconv.Atoi(freePort(testLeafEnv))
+	ownAddr = net.JoinHostPort(sandboxHost, freePort(testOwnPortEnv))
 	ownDatabase = os.Getenv(testOwnDBEnv)
 	if ownDatabase == "" {
 		ownDatabase = testDatabase()
@@ -67,11 +60,16 @@ func testDatabase() string {
 	return u.String()
 }
 
-func freePort() string {
+func freePort(env string) string {
+	if port := os.Getenv(env); port != "" {
+		return port
+	}
 	l, err := net.Listen("tcp", sandboxHost+":0")
 	if err != nil {
 		panic(err)
 	}
 	defer l.Close()
-	return strconv.Itoa(l.Addr().(*net.TCPAddr).Port)
+	port := strconv.Itoa(l.Addr().(*net.TCPAddr).Port)
+	os.Setenv(env, port)
+	return port
 }

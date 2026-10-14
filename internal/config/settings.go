@@ -16,6 +16,8 @@ type Settings struct {
 	Region string `yaml:"region,omitempty"`
 	// Queue задаёт адрес очереди изменений.
 	Queue string `yaml:"queue"`
+	// QueueLeaf задаёт адрес очереди изменений для очереди устройства.
+	QueueLeaf string `yaml:"queue_leaf,omitempty"`
 	// QueueUser задаёт имя пользователя очереди.
 	QueueUser string `yaml:"queue_user,omitempty"`
 	// QueuePass задаёт пароль пользователя очереди.

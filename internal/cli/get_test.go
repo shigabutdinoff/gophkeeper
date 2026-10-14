@@ -53,7 +53,7 @@ func serveFile(t *testing.T, size int, object func(f *fileServer, n int32, w htt
 			ok(w, r)
 		}
 	})
-	f.settings = config.Settings{Server: f.URL, AppKey: "ключ-приложения", Region: region, Queue: "tls://127.0.0.1:1"}
+	f.settings = config.Settings{Server: f.URL, AppKey: "ключ-приложения", Region: region, Queue: "tls://127.0.0.1:1", QueueLeaf: "tls://127.0.0.1:2"}
 	writeSettings(t, f.settings)
 	login(t)
 	return f
@@ -191,7 +191,7 @@ func TestGetRefuses(t *testing.T) {
 func TestGetOtherKind(t *testing.T) {
 	rec := sealed(t, "anna", "s3cret", "почта")
 	srv := serveRecords(t, replyJSON(t, []stored{rec}))
-	queueSettings(t, srv.URL, config.Settings{Queue: "tls://127.0.0.1:1"})
+	queueSettings(t, srv.URL, config.Settings{Queue: "tls://127.0.0.1:1", QueueLeaf: "tls://127.0.0.1:2"})
 	login(t)
 	path := target(t)
 	_, _, err := executeIn(keyboard(t, true, ""), "get", rec.ID, path)

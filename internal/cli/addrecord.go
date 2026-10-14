@@ -3,7 +3,6 @@ package cli
 import (
 	"errors"
 
-	"github.com/nats-io/nats.go"
 	"github.com/spf13/cobra"
 
 	"github.com/shigabutdinoff/gophkeeper/internal/account"
@@ -31,18 +30,4 @@ func offline(keys account.Secrets, err error) error {
 		return errOffline
 	}
 	return err
-}
-
-func deliver(c *cobra.Command, s config.Settings, keys account.Secrets, id string, msg *nats.Msg, err error) error {
-	switch {
-	case err != nil:
-		return err
-	case keys.Access == "":
-		return errOffline
-	}
-	err = queue.Send(c.Context(), s, msg, nats.Token(keys.Access), nats.CustomInboxPrefix(nats.InboxPrefix+keys.User))
-	if err = offline(keys, err); err != nil {
-		return err
-	}
-	return report(c, "Изменение принято, запись "+id+".")
 }

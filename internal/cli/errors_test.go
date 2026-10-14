@@ -10,6 +10,7 @@ import (
 )
 
 func TestErrors(t *testing.T) {
+	settingsFile(t, "https://example.invalid", "ключ")
 	cases := [][]string{{"-x"}, {"-hx"}, {"--help=да"}, {"---x"}}
 	for _, path := range paths() {
 		cases = append(cases, slices.Concat(path, []string{"nosuch"}), slices.Concat(path, []string{"--nosuch"}))

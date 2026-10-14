@@ -37,6 +37,7 @@ func New(t testing.TB) *Queue {
 			JetStream: true, StoreDir: t.TempDir(), TLSConfig: &tls.Config{Certificates: web.TLS.Certificates, MinVersion: tls.VersionTLS12},
 			Users:       []*server.User{{Username: "admin", Password: "admin-pass"}},
 			AuthCallout: &server.AuthCallout{Issuer: public, Account: server.DEFAULT_GLOBAL_ACCOUNT, AuthUsers: []string{"admin"}}}}
+	q.listenLeaf(t)
 	keys := httptest.NewServer(http.HandlerFunc(q.JWKS))
 	t.Cleanup(keys.Close)
 	q.Supabase = keys.URL

@@ -5,6 +5,7 @@ import (
 
 	"github.com/shigabutdinoff/gophkeeper/internal/account"
 	"github.com/shigabutdinoff/gophkeeper/internal/config"
+	"github.com/shigabutdinoff/gophkeeper/internal/queue"
 )
 
 type online struct {
@@ -20,5 +21,8 @@ func connect(c *cobra.Command) (online, error) {
 	keys, err := account.Unlock(c.Context(), httpClient, s, func(email string) (string, error) {
 		return askHidden(c, "Пароль "+email)
 	})
+	if err == nil && keys.Access != "" {
+		_ = queue.Flush(c.Context(), s, keys.User, keys.Data, keys.Access)
+	}
 	return online{s, keys}, err
 }

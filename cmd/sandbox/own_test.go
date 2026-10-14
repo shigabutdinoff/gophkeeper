@@ -110,7 +110,7 @@ func settings(ts *testscript.TestScript, neg bool, args []string) {
 	_, port, err := net.SplitHostPort(ownAddr)
 	ts.Check(err)
 	masked := strings.NewReplacer(ts.Getenv("CONFIG"), "$CONFIG", c.AppKey, "<app_key>", ":"+port, ":<own>",
-		":"+strconv.Itoa(sandboxPort), ":<queue>").Replace(caPEM.ReplaceAllString(text, "<ca>"))
+		":"+strconv.Itoa(sandboxPort), ":<queue>", ":"+strconv.Itoa(sandboxLeafPort), ":<leaf>").Replace(caPEM.ReplaceAllString(text, "<ca>"))
 	_, err = fmt.Fprint(ts.Stdout(), masked)
 	ts.Check(err)
 }

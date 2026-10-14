@@ -39,7 +39,7 @@ func startQueue(t *testing.T) queue {
 	require.NoError(t, sandboxSecrets(state), "секреты песочницы не созданы")
 	pass, err := readPass(state, adminUser)
 	require.NoError(t, err, "пароль администратора не прочитан")
-	opts, seed, err := serverOptions(state, server.RANDOM_PORT)
+	opts, seed, err := serverOptions(state, server.RANDOM_PORT, server.RANDOM_PORT)
 	require.NoError(t, err, "настройки очереди песочницы не собраны")
 	opts.NoSigs = true
 	s := natstest.RunServer(opts)

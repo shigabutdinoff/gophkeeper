@@ -21,6 +21,7 @@ server: https://project.supabase.co
 app_key: ЗАГЛУШКА КЛЮЧА
 region: eu-north-1
 queue: tls://127.0.0.1:<port>
+queue_leaf: tls://127.0.0.1:<leaf>
 queue_ca: |
     <ca>
 

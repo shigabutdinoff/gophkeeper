@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"context"
 	"errors"
 	"regexp"
 	"testing"
@@ -64,16 +63,6 @@ func TestAddOffline(t *testing.T) {
 	out, _, err := executeIn(keyboard(t, true, "s3cret"), "add", "--login", "anna")
 	require.NoError(t, err, "запись без сервера не принята")
 	assert.Contains(t, out, lastChange(t, stream).Record, "напечатан не тот идентификатор записи")
-}
-
-func TestAddQueueDown(t *testing.T) {
-	q := queuetest.New(t).Client
-	loggedIn(t, q, "доступ")
-	ctx, cancel := context.WithTimeout(t.Context(), 300*time.Millisecond)
-	defer cancel()
-	out, _, err := executeCtx(ctx, keyboard(t, true, "s3cret"), "add", "--login", "anna")
-	require.ErrorIs(t, err, queue.ErrUnavailable, "недоступная очередь не распознана")
-	assert.Empty(t, out, "при ошибке напечатано подтверждение")
 }
 
 func TestAddRefusesBeforeSecrets(t *testing.T) {
@@ -144,10 +133,9 @@ func TestAddOfflineExpired(t *testing.T) {
 		srv := loggedIn(t, q.Client, access)
 		srv.Close()
 		out, _, err := executeIn(keyboard(t, true, "s3cret"), "add", "--login", "anna")
-		require.Error(t, err, "запись с истёкшим токеном принята без сервера")
-		assert.Empty(t, out, "при отказе напечатано подтверждение")
-		assert.NotErrorIs(t, err, queue.ErrUnavailable, "истёкший токен принят за недоступную очередь")
-		snaps.MatchSnapshot(t, err.Error())
+		require.NoError(t, err, "запись с истёкшим токеном не сохранена на устройстве")
+		snaps.MatchSnapshot(t, recordID.ReplaceAllString(out, "<id>"))
+		assert.True(t, queue.Kept(), "запись не осталась на устройстве")
 	}
 	assert.Zero(t, queued(t, stream), "запись с истёкшим токеном ушла в очередь")
 }
@@ -161,4 +149,5 @@ func TestAddDenied(t *testing.T) {
 	assert.Empty(t, out, "при отказе напечатано подтверждение")
 	snaps.MatchSnapshot(t, err.Error())
 	assert.Zero(t, queued(t, stream), "запись без доступа ушла в очередь")
+	assert.True(t, queue.Kept(), "запись без доступа не осталась на устройстве")
 }

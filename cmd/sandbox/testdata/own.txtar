@@ -85,6 +85,7 @@ server: https://127.0.0.1:<own>
 app_key: <app_key>
 region: us-east-1
 queue: tls://127.0.0.1:<queue>
+queue_leaf: tls://127.0.0.1:<leaf>
 queue_ca: |
     <ca>
 server_cert: $CONFIG/gophkeeper/sandbox/ca.pem

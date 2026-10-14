@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const synadiaURL = "tls://connect.ngs.global"
+const synadiaURL, synadiaLeaf = "tls://connect.ngs.global", "tls://connect.ngs.global:7422"
 
 func cloud(cmd *cobra.Command, _ []string) error {
 	c, err := parseEnv[cloudConfig]()

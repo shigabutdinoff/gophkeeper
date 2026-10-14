@@ -15,5 +15,6 @@ stderr '^Ошибка: неизвестный тип записи "bogus", до�
 server: https://example.invalid
 app_key: ключ-приложения
 queue: tls://127.0.0.1:1
+queue_leaf: tls://127.0.0.1:2
 -- loggedout.txt --
 Ошибка: сначала войдите в GophKeeper: gophkeeper login
