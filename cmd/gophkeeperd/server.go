@@ -38,7 +38,7 @@ func serverCmd() *cobra.Command {
 		ctx, stop := signal.NotifyContext(c.Context(), syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 		defer stop()
 		return server.Serve(ctx, l, server.Settings{Cert: s.Cert, Key: s.Key, AppKey: s.AppKey, ServerKey: s.ServerKey,
-			TokenKey: s.TokenKey, Database: s.Database})
+			TokenKey: s.TokenKey, Database: s.Database, Log: c.ErrOrStderr()})
 	}
 	return cmd
 }

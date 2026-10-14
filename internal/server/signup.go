@@ -4,30 +4,29 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm/clause"
 )
 
-func (a *auth) signup(c *gin.Context) {
+func (a *auth) signup(w http.ResponseWriter, r *http.Request) {
 	var in credentials
-	if c.ShouldBindJSON(&in) != nil {
-		c.Data(http.StatusBadRequest, gin.MIMEJSON, []byte(invalid))
+	if !decode(r, &in) {
+		respond(w, http.StatusBadRequest, invalid)
 		return
 	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(in.Password), bcrypt.DefaultCost)
 	if err != nil {
-		c.Data(http.StatusBadRequest, gin.MIMEJSON, []byte(invalid))
+		respond(w, http.StatusBadRequest, invalid)
 		return
 	}
 	acc := account{Email: strings.ToLower(in.Email), EncryptedPassword: string(hash)}
-	res := a.db.WithContext(c.Request.Context()).Clauses(clause.OnConflict{DoNothing: true}).Create(&acc)
+	res := a.db.WithContext(r.Context()).Clauses(clause.OnConflict{DoNothing: true}).Create(&acc)
 	switch {
 	case res.Error != nil:
-		c.Data(http.StatusInternalServerError, gin.MIMEJSON, []byte(failed))
+		respond(w, http.StatusInternalServerError, failed)
 	case res.RowsAffected == 0:
-		c.Data(http.StatusUnprocessableEntity, gin.MIMEJSON, []byte(exists))
+		respond(w, http.StatusUnprocessableEntity, exists)
 	default:
-		a.admit(c, acc, false)
+		a.admit(w, r, acc, false)
 	}
 }

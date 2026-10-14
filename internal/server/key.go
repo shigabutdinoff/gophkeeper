@@ -1,13 +1,17 @@
 package server
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"io"
 	"os"
 	"time"
 
-	"github.com/MicahParks/jwkset"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/lestrrat-go/jwx/v3/jwa"
+	"github.com/lestrrat-go/jwx/v3/jwk"
+	"github.com/sirupsen/logrus"
 )
 
 const lifetime = time.Hour
@@ -21,14 +25,18 @@ func loadKey(path string) (*auth, error) {
 	if err != nil {
 		return nil, err
 	}
-	jwk, err := jwkset.NewJWKFromKey(key, jwkset.JWKOptions{Metadata: jwkset.JWKMetadataOptions{ALG: jwkset.AlgES256, USE: jwkset.UseSig}})
+	public, err := jwk.Import(&key.PublicKey)
 	if err != nil {
 		return nil, err
 	}
-	public := jwk.Marshal()
-	public.KID = public.X
-	keys, err := json.Marshal(jwkset.JWKSMarshal{Keys: []jwkset.JWKMarshal{public}})
-	return &auth{key: key, kid: public.KID, keys: keys}, err
+	x, _ := public.(jwk.ECDSAPublicKey).X()
+	kid := base64.RawURLEncoding.EncodeToString(x)
+	err = errors.Join(public.Set(jwk.AlgorithmKey, jwa.ES256()), public.Set(jwk.KeyUsageKey, jwk.ForSignature), public.Set(jwk.KeyIDKey, kid))
+	keys, _ := json.Marshal(map[string][]jwk.Key{"keys": {public}})
+	log := logrus.New()
+	log.SetOutput(io.Discard)
+	log.SetFormatter(&logrus.TextFormatter{FullTimestamp: true})
+	return &auth{key: key, kid: kid, keys: keys, log: log}, err
 }
 
 func (a *auth) sign(issuer, subject, id string, expires time.Time) (string, error) {

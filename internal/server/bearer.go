@@ -1,0 +1,17 @@
+package server
+
+import (
+	"net/http"
+
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/golang-jwt/jwt/v5/request"
+)
+
+var parser = jwt.NewParser(jwt.WithValidMethods([]string{"ES256"}), jwt.WithExpirationRequired())
+
+func (a *auth) bearer(r *http.Request) (jwt.RegisteredClaims, error) {
+	var claims jwt.RegisteredClaims
+	_, err := request.ParseFromRequest(r, request.AuthorizationHeaderExtractor,
+		func(*jwt.Token) (any, error) { return &a.key.PublicKey, nil }, request.WithClaims(&claims), request.WithParser(parser))
+	return claims, err
+}

@@ -114,9 +114,11 @@ func TestGuard(t *testing.T) {
 	}
 	snaps.MatchSnapshot(t, got)
 	for _, key := range []string{"app-key", "service-key"} {
-		for _, path := range []string{"/", "/auth/v1/health", "/rest/v1/records"} {
+		for _, path := range []string{"/", "/auth/v1/health"} {
 			assert.Equal(t, http.StatusNotFound, r.get(t, path, http.Header{"Apikey": {key}}).status, "ключ проекта не принят: %s %s", key, path)
 		}
+		got := r.get(t, "/rest/v1/records", http.Header{"Apikey": {key}})
+		assert.Equal(t, reference(t, "records_jwt_invalid.txt"), answer(got.status, got.body), "чтение без токена не получило отказ Supabase: %s", key)
 	}
 }
 

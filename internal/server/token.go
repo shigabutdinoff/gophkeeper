@@ -4,28 +4,28 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func (a *auth) token(c *gin.Context) {
-	if c.Query("grant_type") == "refresh_token" {
-		a.refresh(c)
+func (a *auth) token(w http.ResponseWriter, r *http.Request) {
+	grant := r.URL.Query().Get("grant_type")
+	if grant == "refresh_token" {
+		a.refresh(w, r)
 		return
 	}
 	var in credentials
-	if c.ShouldBindJSON(&in) != nil || c.Query("grant_type") != "password" {
-		c.Data(http.StatusBadRequest, gin.MIMEJSON, []byte(invalid))
+	if !decode(r, &in) || grant != "password" {
+		respond(w, http.StatusBadRequest, invalid)
 		return
 	}
 	var acc account
-	err := a.db.WithContext(c.Request.Context()).Take(&acc, "email = ?", strings.ToLower(in.Email)).Error
+	err := a.db.WithContext(r.Context()).Take(&acc, "email = ?", strings.ToLower(in.Email)).Error
 	switch {
 	case err != nil:
-		c.Data(http.StatusInternalServerError, gin.MIMEJSON, []byte(failed))
+		respond(w, http.StatusInternalServerError, failed)
 	case bcrypt.CompareHashAndPassword([]byte(acc.EncryptedPassword), []byte(in.Password)) != nil:
-		c.Data(http.StatusBadRequest, gin.MIMEJSON, []byte(wrong))
+		respond(w, http.StatusBadRequest, wrong)
 	default:
-		a.admit(c, acc, true)
+		a.admit(w, r, acc, true)
 	}
 }

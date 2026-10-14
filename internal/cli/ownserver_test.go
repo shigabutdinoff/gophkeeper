@@ -58,6 +58,11 @@ func ownDatabase(t *testing.T) string {
 func startOwnServer(t *testing.T) (config.Settings, string) {
 	t.Helper()
 	dsn := ownDatabase(t)
+	return startOwnOn(t, dsn), dsn
+}
+
+func startOwnOn(t *testing.T, dsn string) config.Settings {
+	t.Helper()
 	web := httptest.NewUnstartedServer(nil)
 	web.StartTLS()
 	web.Close()
@@ -85,7 +90,7 @@ func startOwnServer(t *testing.T) (config.Settings, string) {
 	resp, err := web.Client().Get("https://" + l.Addr().String() + "/auth/v1/.well-known/jwks.json")
 	require.NoError(t, err, "свой сервер не запустился")
 	resp.Body.Close()
-	return config.Settings{Server: "https://" + l.Addr().String(), AppKey: "ключ-приложения", ServerCert: cert}, dsn
+	return config.Settings{Server: "https://" + l.Addr().String(), AppKey: "ключ-приложения", ServerCert: cert}
 }
 
 func device(t *testing.T, s config.Settings) {

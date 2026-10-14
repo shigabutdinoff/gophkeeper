@@ -118,7 +118,7 @@ func TestOwnServer(t *testing.T) {
 	c, cert, err := backend(state)
 	require.NoError(t, err, "режим своего сервера не прочитан")
 	client := &http.Client{Timeout: 5 * time.Second}
-	req, err := http.NewRequest(http.MethodGet, string(c.Supabase.URL)+"/rest/v1/records", nil)
+	req, err := http.NewRequest(http.MethodGet, string(c.Supabase.URL)+"/auth/v1/health", nil)
 	require.NoError(t, err, "запрос не собран")
 	req.Header.Set("apikey", c.ServiceKey)
 	resp, err := client.Do(req)

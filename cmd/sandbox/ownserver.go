@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"path/filepath"
 
 	"github.com/shigabutdinoff/gophkeeper/internal/server"
@@ -23,6 +24,6 @@ func ownServer(state string) (func(context.Context) error, error) {
 	}
 	return func(ctx context.Context) error {
 		return server.Serve(ctx, l, server.Settings{Cert: filepath.Join(state, certFile), Key: filepath.Join(state, keyFile),
-			AppKey: c.Supabase.Key, ServerKey: c.ServiceKey, TokenKey: filepath.Join(state, tokenKeyFile), Database: ownDatabase})
+			AppKey: c.Supabase.Key, ServerKey: c.ServiceKey, TokenKey: filepath.Join(state, tokenKeyFile), Database: ownDatabase, Log: os.Stderr})
 	}, nil
 }

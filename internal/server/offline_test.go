@@ -10,7 +10,6 @@ import (
 	"time"
 	"uuid"
 
-	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -72,9 +71,7 @@ func TestGrantMatchesSupabase(t *testing.T) {
 	s := session{ID: uuid.New().String(), AccountID: acc.ID, RefreshToken: "refresh"}
 	for name, weak := range map[string]json.RawMessage{"signup_ok.txt": nil, "token_ok.txt": json.RawMessage("null"), "refresh_ok.txt": nil} {
 		rec := httptest.NewRecorder()
-		c, _ := gin.CreateTestContext(rec)
-		c.Request = httptest.NewRequest(http.MethodPost, "https://server.example/auth/v1/signup", nil)
-		a.grant(c, acc, s, name != "signup_ok.txt", weak)
+		a.grant(rec, httptest.NewRequest(http.MethodPost, "https://server.example/auth/v1/signup", nil), acc, s, name != "signup_ok.txt", weak)
 		assert.Equal(t, reference(t, name), answer(rec.Code, masked(t, rec.Body.String())), "ответ не равен эталону Supabase %s", name)
 		assert.Equal(t, "application/json", rec.Header().Get("Content-Type"), "тип ответа не тот: %s", name)
 		var claims jwt.RegisteredClaims
@@ -85,5 +82,35 @@ func TestGrantMatchesSupabase(t *testing.T) {
 		assert.Equal(t, s.ID, claims.ID, "токен не несёт свою сессию: %s", name)
 		assert.Equal(t, s.RefreshToken, parse(t, rec.Body.String()).Refresh, "токен продления не из сессии: %s", name)
 		assert.Contains(t, rec.Body.String(), `Z"`, "время в ответе не в UTC: %s", name)
+	}
+}
+
+func TestOfflineRecords(t *testing.T) {
+	a := offline(t)
+	srv := httptest.NewServer(a.routes(Settings{AppKey: "app-key"}))
+	t.Cleanup(srv.Close)
+	token, err := a.sign("https://server.example/auth/v1", uuid.New().String(), uuid.New().String(), time.Now().Add(lifetime))
+	require.NoError(t, err, "токен не подписан")
+	for name, c := range map[string]struct {
+		query, token, body string
+		status             int
+	}{
+		"без токена":      {listQuery, "", jwtInvalid, http.StatusUnauthorized},
+		"негодный id":     {"?id=eq.abc", token, syntax, http.StatusBadRequest},
+		"негодный предел": {"?limit=x", token, syntax, http.StatusBadRequest},
+		"база недоступна": {"?id=gt." + uuid.New().String() + "&limit=5", token, internal, http.StatusInternalServerError},
+	} {
+		req, err := http.NewRequest(http.MethodGet, srv.URL+"/rest/v1/records"+c.query, nil)
+		require.NoError(t, err, "запрос не собран")
+		req.Header = http.Header{"Apikey": {"app-key"}}
+		if c.token != "" {
+			req.Header.Set("Authorization", "Bearer "+c.token)
+		}
+		resp, err := srv.Client().Do(req)
+		require.NoError(t, err, "сервер не ответил: %s", name)
+		body, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		require.NoError(t, err, "ответ не прочитан: %s", name)
+		assert.Equal(t, answer(c.status, c.body), answer(resp.StatusCode, string(body)), "ответ не тот: %s", name)
 	}
 }

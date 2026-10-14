@@ -5,24 +5,22 @@ import (
 	"encoding/json"
 	"net/http"
 	"time"
-
-	"github.com/gin-gonic/gin"
 )
 
-func (a *auth) admit(c *gin.Context, acc account, login bool) {
+func (a *auth) admit(w http.ResponseWriter, r *http.Request, acc account, login bool) {
 	s := session{AccountID: acc.ID, RefreshToken: rand.Text()}
-	if a.db.WithContext(c.Request.Context()).Create(&s).Error != nil {
-		c.Data(http.StatusInternalServerError, gin.MIMEJSON, []byte(failed))
+	if a.db.WithContext(r.Context()).Create(&s).Error != nil {
+		respond(w, http.StatusInternalServerError, failed)
 		return
 	}
-	a.grant(c, acc, s, login, json.RawMessage("null"))
+	a.grant(w, r, acc, s, login, json.RawMessage("null"))
 }
 
-func (a *auth) grant(c *gin.Context, acc account, s session, login bool, weak json.RawMessage) {
+func (a *auth) grant(w http.ResponseWriter, req *http.Request, acc account, s session, login bool, weak json.RawMessage) {
 	now, created := time.Now().UTC(), acc.Created.UTC()
-	token, err := a.sign("https://"+c.Request.Host+"/auth/v1", acc.ID, s.ID, now.Add(lifetime))
+	token, err := a.sign("https://"+req.Host+"/auth/v1", acc.ID, s.ID, now.Add(lifetime))
 	if err != nil {
-		c.Data(http.StatusInternalServerError, gin.MIMEJSON, []byte(failed))
+		respond(w, http.StatusInternalServerError, failed)
 		return
 	}
 	r := issued{AccessToken: token, TokenType: "bearer", ExpiresIn: int(lifetime.Seconds()),
@@ -36,5 +34,5 @@ func (a *auth) grant(c *gin.Context, acc account, s session, login bool, weak js
 		r.User.ConfirmedAt, r.WeakPassword = &created, weak
 	}
 	body, _ := json.Marshal(r)
-	c.Data(http.StatusOK, gin.MIMEJSON, body)
+	respond(w, http.StatusOK, string(body))
 }

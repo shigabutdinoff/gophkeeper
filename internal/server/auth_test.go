@@ -1,16 +1,16 @@
 package server
 
 import (
-	"bytes"
 	"context"
 	"crypto/rand"
-	"io"
+	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/bcrypt"
@@ -153,16 +153,21 @@ func TestLostTable(t *testing.T) {
 	assert.Equal(t, http.StatusOK, got.status, "сервер перестал отвечать после сбоя базы")
 }
 
-func TestGinQuiet(t *testing.T) {
-	var out bytes.Buffer
-	set(t, &gin.DefaultWriter, io.Writer(&out))
-	set(t, &gin.DefaultErrorWriter, gin.DefaultWriter)
-	for _, mode := range []string{gin.DebugMode, gin.ReleaseMode, gin.TestMode} {
-		gin.SetMode(mode)
-		r := start(t)
-		status, body := r.signup(t, newEmail(), rand.Text())
-		require.Equal(t, http.StatusOK, status, "регистрация отклонена: %s", body)
-		r.signup(t, "anna", "")
-		assert.Empty(t, out.String(), "gin пишет в свой вывод в режиме %s", mode)
-	}
+func TestQuiet(t *testing.T) {
+	out, err := os.Create(filepath.Join(t.TempDir(), "out"))
+	require.NoError(t, err, "файл вывода не создан")
+	set(t, &os.Stdout, out)
+	set(t, &os.Stderr, out)
+	log.SetOutput(out)
+	t.Cleanup(func() { log.SetOutput(os.Stderr) })
+	r := start(t)
+	status, body := r.signup(t, newEmail(), rand.Text())
+	require.Equal(t, http.StatusOK, status, "регистрация отклонена: %s", body)
+	r.signup(t, "anna", "")
+	r.get(t, keysPath, nil)
+	r.stop()
+	require.NoError(t, r.wait(t), "сервер остановился с ошибкой")
+	got, err := os.ReadFile(out.Name())
+	require.NoError(t, err, "вывод не прочитан")
+	assert.Empty(t, string(got), "сервер пишет в stdout или stderr процесса")
 }

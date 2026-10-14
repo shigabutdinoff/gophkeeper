@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"uuid"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -91,4 +92,22 @@ func TestLiveSupabaseReferences(t *testing.T) {
 	matchReference(t, "refresh_token_not_found.txt", answer(status, ended))
 	status, unknown := l.do(t, http.MethodPost, "auth/v1/token?grant_type=refresh_token", "", map[string]string{"refresh_token": "abcdefghijkl"})
 	assert.Equal(t, answer(status, ended), answer(status, unknown), "отказ незнакомому токену продления не равен отказу завершённой сессии")
+	liveRecords(t, l, creds)
+}
+
+func liveRecords(t *testing.T, l liveSupabase, creds map[string]string) {
+	t.Helper()
+	status, body := l.do(t, http.MethodPost, "auth/v1/token?grant_type=password", "", creds)
+	require.Equal(t, http.StatusOK, status, "вход отклонён: %s", body)
+	s := parse(t, body)
+	id := uuid.New().String()
+	status, body = l.do(t, http.MethodPost, "rest/v1/records", l.service,
+		map[string]string{"id": id, "user_id": s.User.ID, "note": "почта", "secret": "c2VjcmV0"})
+	require.Equal(t, http.StatusCreated, status, "запись не добавлена: %s", body)
+	status, body = l.as(s.Access).do(t, http.MethodGet, "rest/v1/records?select=id,note,secret&id=eq."+id, "", nil)
+	matchReference(t, "records_ok.txt", answer(status, masked(t, body)))
+	status, body = l.as(s.Access).do(t, http.MethodGet, "rest/v1/records?select=id,note,secret&id=eq."+uuid.New().String(), "", nil)
+	matchReference(t, "records_none.txt", answer(status, body))
+	status, body = l.as(spoil(s.Access)).do(t, http.MethodGet, "rest/v1/records?select=id,note,secret&order=id&limit=100", "", nil)
+	matchReference(t, "records_jwt_invalid.txt", answer(status, body))
 }

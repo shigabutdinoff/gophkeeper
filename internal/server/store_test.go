@@ -16,8 +16,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-const keysPath = "/auth/v1/.well-known/jwks.json"
-
 func columns(t *testing.T, dsn, table string) []string {
 	t.Helper()
 	rows, err := connect(t, dsn).Query(context.Background(),
@@ -56,6 +54,7 @@ func TestSchemaCreated(t *testing.T) {
 	require.Equal(t, http.StatusOK, r.get(t, keysPath, nil).status, "сервер не запустился")
 	assert.Equal(t, []string{"created_at", "email", "encrypted_password", "id"}, columns(t, dsn, "accounts"), "столбцы таблицы не те")
 	assert.Equal(t, []string{"account_id", "id", "refresh_token"}, columns(t, dsn, "sessions"), "столбцы таблицы сессий не те")
+	assert.Equal(t, []string{"id", "note", "secret", "updated_at", "user_id"}, columns(t, dsn, "records"), "столбцы таблицы записей не те")
 }
 
 func TestAccountsSurviveRestart(t *testing.T) {
@@ -76,7 +75,7 @@ func TestExistingTableKept(t *testing.T) {
 	require.NoError(t, err, "таблица не подготовлена")
 	r := startOn(t, dsn, tokenKey(t))
 	got := r.get(t, "/rest/v1/records", http.Header{"Apikey": {"app-key"}})
-	assert.Equal(t, http.StatusNotFound, got.status, "сервер не запустился на базе с готовой таблицей")
+	assert.Equal(t, http.StatusUnauthorized, got.status, "сервер не запустился на базе с готовой таблицей")
 	assert.Equal(t, 1, r.rows(t, ""), "строки готовой таблицы изменились")
 }
 
@@ -152,7 +151,7 @@ func TestSessionsDown(t *testing.T) {
 	r := startOn(t, dsn, tokenKey(t))
 	status, body := r.signup(t, newEmail(), rand.Text())
 	require.Equal(t, http.StatusOK, status, "регистрация отклонена: %s", body)
-	_, err := migrated(t, dsn).Down(context.Background())
+	_, err := migrated(t, dsn).DownTo(context.Background(), 1)
 	require.NoError(t, err, "миграция сессий не откатилась")
 	assert.Empty(t, columns(t, dsn, "sessions"), "таблица сессий осталась после отката")
 	assert.Equal(t, 1, r.rows(t, ""), "откат тронул учётные записи")

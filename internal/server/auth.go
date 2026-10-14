@@ -1,11 +1,14 @@
 package server
 
 import (
+	"cmp"
 	"context"
 	"crypto/ecdsa"
 	"fmt"
+	"io"
 
 	"github.com/pressly/goose/v3"
+	"github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -16,6 +19,7 @@ type auth struct {
 	key  *ecdsa.PrivateKey
 	kid  string
 	keys []byte
+	log  *logrus.Logger
 }
 
 func open(ctx context.Context, s Settings) (*auth, error) {
@@ -23,6 +27,7 @@ func open(ctx context.Context, s Settings) (*auth, error) {
 	if err != nil {
 		return nil, fmt.Errorf("ключ подписи токенов не прочитан: %w", err)
 	}
+	a.log.SetOutput(cmp.Or(s.Log, io.Discard))
 	if a.db, err = gorm.Open(postgres.Open(s.Database), &gorm.Config{Logger: logger.Discard, DisableAutomaticPing: true}); err != nil {
 		return nil, fmt.Errorf("адрес базы данных не разобран: %w", err)
 	}

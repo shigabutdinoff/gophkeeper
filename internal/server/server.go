@@ -10,16 +10,6 @@ import (
 	"time"
 )
 
-// Settings задаёт сертификат сервера, ключи проекта и хранение входа.
-type Settings struct {
-	// Cert и Key задают пути к файлам сертификата и ключа сервера.
-	Cert, Key string
-	// AppKey и ServerKey задают ключ приложения и служебный ключ.
-	AppKey, ServerKey string
-	// TokenKey и Database задают файл ключа подписи токенов и адрес базы.
-	TokenKey, Database string
-}
-
 // ErrNoCert сообщает, что сертификат или ключ сервера не заданы.
 var ErrNoCert = errors.New("нужны сертификат и ключ сервера")
 

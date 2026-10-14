@@ -3,22 +3,24 @@ package server
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/go-chi/chi/v5"
 )
 
+const keysPath = "/auth/v1/.well-known/jwks.json"
+
 func (a *auth) routes(s Settings) http.Handler {
-	gin.SetMode(gin.ReleaseMode)
-	e, mux := gin.New(), http.NewServeMux()
-	e.POST("/auth/v1/signup", a.signup)
-	e.POST("/auth/v1/token", a.token)
-	e.POST("/auth/v1/logout", a.logout)
-	e.Match([]string{http.MethodGet, http.MethodHead}, "/auth/v1/.well-known/jwks.json", func(c *gin.Context) {
-		c.Data(http.StatusOK, gin.MIMEJSON, a.keys)
-	})
-	mux.Handle("GET /auth/v1/.well-known/jwks.json", e)
-	mux.Handle("POST /auth/v1/signup", guard(s, e))
-	mux.Handle("POST /auth/v1/token", guard(s, e))
-	mux.Handle("POST /auth/v1/logout", guard(s, e))
-	mux.Handle("/", guard(s, operations))
-	return http.MaxBytesHandler(mux, 1<<20)
+	ops := chi.NewRouter()
+	ops.Post("/auth/v1/signup", a.signup)
+	ops.Post("/auth/v1/token", a.token)
+	ops.Post("/auth/v1/logout", a.logout)
+	ops.Get("/rest/v1/records", a.records)
+	ops.NotFound(operations.ServeHTTP)
+	ops.MethodNotAllowed(operations.ServeHTTP)
+	r := chi.NewRouter()
+	keys := func(w http.ResponseWriter, _ *http.Request) { respond(w, http.StatusOK, string(a.keys)) }
+	r.Get(keysPath, keys)
+	r.Head(keysPath, keys)
+	r.NotFound(guard(s, ops).ServeHTTP)
+	r.MethodNotAllowed(guard(s, ops).ServeHTTP)
+	return http.MaxBytesHandler(r, 1<<20)
 }

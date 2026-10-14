@@ -26,6 +26,8 @@ type running struct {
 	err  error
 }
 
+var serverLog io.Writer
+
 func set[T any](t *testing.T, p *T, v T) {
 	t.Helper()
 	old := *p
@@ -64,7 +66,7 @@ func startOn(t *testing.T, dsn, tokenKey string) *running {
 	r := &running{addr: l.Addr().String(), dsn: dsn, pool: pool, stop: cancel, done: make(chan struct{})}
 	go func() {
 		defer close(r.done)
-		r.err = Serve(ctx, l, Settings{Cert: cert, Key: key, AppKey: "app-key", ServerKey: "service-key", TokenKey: tokenKey, Database: dsn})
+		r.err = Serve(ctx, l, Settings{Cert: cert, Key: key, AppKey: "app-key", ServerKey: "service-key", TokenKey: tokenKey, Database: dsn, Log: serverLog})
 	}()
 	t.Cleanup(func() { cancel(); <-r.done })
 	return r

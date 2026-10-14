@@ -20,8 +20,6 @@ func guard(s Settings, next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(body))
+		respond(w, http.StatusUnauthorized, body)
 	})
 }

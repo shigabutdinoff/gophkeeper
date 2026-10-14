@@ -6,8 +6,10 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/x509"
+	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -217,4 +219,44 @@ func TestServerLoad(t *testing.T) {
 		"env: " + loadServer(t, "env", flags...),
 		"none: " + loadServer(t, ""),
 	})
+}
+
+func TestServerLog(t *testing.T) {
+	client := serverEnv(t)
+	out, err := os.Create(filepath.Join(t.TempDir(), "stderr"))
+	require.NoError(t, err, "файл вывода не создан")
+	root := newRoot(io.Discard, out)
+	addr := freeAddr(t)
+	root.SetArgs([]string{"server", "--address", addr})
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- root.ExecuteContext(ctx) }()
+	answers(t, client, addr)
+	req, err := http.NewRequest(http.MethodPost, "https://"+addr+"/auth/v1/signup", strings.NewReader(`{"email":"anna@example.com","password":"ключ"}`))
+	require.NoError(t, err, "запрос не собран")
+	req.Header.Set("apikey", "app-key")
+	resp, err := client.Do(req)
+	require.NoError(t, err, "сервер не ответил")
+	var s struct {
+		Access string `json:"access_token"`
+	}
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&s), "ответ регистрации не прочитан")
+	resp.Body.Close()
+	conn, err := pgx.Connect(context.Background(), os.Getenv("GOPHKEEPER_DATABASE"))
+	require.NoError(t, err, "база не открыта")
+	defer conn.Close(context.Background())
+	_, err = conn.Exec(context.Background(), "ALTER TABLE records RENAME TO records_off")
+	require.NoError(t, err, "таблица не переименована")
+	req, err = http.NewRequest(http.MethodGet, "https://"+addr+"/rest/v1/records", nil)
+	require.NoError(t, err, "запрос не собран")
+	req.Header = http.Header{"Apikey": {"app-key"}, "Authorization": {"Bearer " + s.Access}}
+	resp, err = client.Do(req)
+	require.NoError(t, err, "сервер не ответил")
+	resp.Body.Close()
+	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode, "сбой чтения не получил общий отказ")
+	cancel()
+	require.NoError(t, <-done, "сервер остановился с ошибкой")
+	logged, err := os.ReadFile(out.Name())
+	require.NoError(t, err, "вывод не прочитан")
+	assert.Contains(t, string(logged), `msg="внутренняя ошибка сервера"`, "строка журнала не попала в stderr")
 }
