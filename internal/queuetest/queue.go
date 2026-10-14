@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
 	"github.com/nats-io/nats-server/v2/server"
@@ -22,8 +23,10 @@ import (
 func New(t testing.TB) *Queue {
 	t.Helper()
 	web := httptest.NewTLSServer(http.NotFoundHandler())
-	defer web.Close()
-	url := "tls://" + web.Listener.Addr().String()
+	web.Close()
+	port, err := FreePort()
+	require.NoError(t, err, "свободный порт для очереди не найден")
+	url := "tls://" + net.JoinHostPort("127.0.0.1", strconv.Itoa(port))
 	ca := string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: web.Certificate().Raw}))
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	require.NoError(t, err, "ключ токенов не создан")
@@ -33,7 +36,7 @@ func New(t testing.TB) *Queue {
 	public, _ := issuer.PublicKey()
 	q := &Queue{Client: config.Settings{Queue: url, QueueCA: ca}, Seed: string(seed), key: key,
 		Admin: config.Settings{Queue: url, QueueUser: "admin", QueuePass: "admin-pass", QueueCA: ca},
-		opts: &server.Options{Host: "127.0.0.1", Port: web.Listener.Addr().(*net.TCPAddr).Port, NoLog: true, NoSigs: true,
+		opts: &server.Options{Host: "127.0.0.1", Port: port, NoLog: true, NoSigs: true,
 			JetStream: true, StoreDir: t.TempDir(), TLSConfig: &tls.Config{Certificates: web.TLS.Certificates, MinVersion: tls.VersionTLS12},
 			Users:       []*server.User{{Username: "admin", Password: "admin-pass"}},
 			AuthCallout: &server.AuthCallout{Issuer: public, Account: server.DEFAULT_GLOBAL_ACCOUNT, AuthUsers: []string{"admin"}}}}

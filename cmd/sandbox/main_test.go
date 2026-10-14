@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"log"
-	"net"
 	"net/url"
 	"os"
 	"strconv"
@@ -13,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/rogpeppe/go-internal/testscript"
 
+	"github.com/shigabutdinoff/gophkeeper/internal/queuetest"
 	"github.com/shigabutdinoff/gophkeeper/internal/snapstest"
 )
 
@@ -76,10 +76,9 @@ func freePort(env string) error {
 	if os.Getenv(env) != "" {
 		return nil
 	}
-	l, err := net.Listen("tcp", sandboxHost+":0")
+	port, err := queuetest.FreePort()
 	if err != nil {
 		return err
 	}
-	defer func() { _ = l.Close() }()
-	return os.Setenv(env, strconv.Itoa(l.Addr().(*net.TCPAddr).Port))
+	return os.Setenv(env, strconv.Itoa(port))
 }

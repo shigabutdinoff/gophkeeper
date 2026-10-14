@@ -17,6 +17,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"syscall"
 	"testing"
@@ -33,10 +34,9 @@ import (
 
 func freeAddr(t *testing.T) string {
 	t.Helper()
-	l, err := net.Listen("tcp", "127.0.0.1:0")
+	port, err := queuetest.FreePort()
 	require.NoError(t, err, "порт не занят")
-	defer func() { _ = l.Close() }()
-	return l.Addr().String()
+	return net.JoinHostPort("127.0.0.1", strconv.Itoa(port))
 }
 
 func serverFiles(t *testing.T, database string) *http.Client {

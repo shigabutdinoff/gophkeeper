@@ -76,9 +76,9 @@ func TestSendWaitsForQueue(t *testing.T) {
 
 func TestSendUnavailable(t *testing.T) {
 	q := queuetest.New(t)
+	began := time.Now()
 	ctx, cancel := context.WithTimeout(t.Context(), 300*time.Millisecond)
 	defer cancel()
-	began := time.Now()
 	err := Send(ctx, q.Client, change("изменение-4"), q.As(t, anna))
 	assert.ErrorIs(t, err, ErrUnavailable, "недоступная очередь не распознана")
 	assert.NotErrorIs(t, err, nats.ErrHeadersNotSupported, "отправка до подключения")
