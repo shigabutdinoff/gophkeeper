@@ -8,9 +8,9 @@ import (
 	"github.com/shigabutdinoff/gophkeeper/internal/config"
 )
 
-// Unlock возвращает ключ и токен доступа для команд с данными. При сбое
-// сервера берёт их из хранилища секретов и кладёт причину в Down. Без
-// входа ErrLoggedOut, без хранилища спрашивает у ask пароль для email.
+// Unlock возвращает ключ и токен доступа. При сбое сервера берёт их из
+// хранилища секретов с причиной в Down, без хранилища спрашивает пароль у
+// ask. Без входа ErrLoggedOut, при недоверенном сертификате ErrUntrusted.
 func Unlock(ctx context.Context, client *http.Client, s config.Settings,
 	ask func(email string) (string, error)) (Secrets, error) {
 	email, err := loadEmail(s.Server)
@@ -25,6 +25,8 @@ func Unlock(ctx context.Context, client *http.Client, s config.Settings,
 	switch {
 	case errors.Is(err, ErrLoggedOut):
 		return Secrets{}, errors.Join(err, forget())
+	case errors.Is(err, ErrUntrusted):
+		return Secrets{}, err
 	case err == nil:
 		r.Refresh, r.Access, r.User = t.Refresh, t.Access, t.User.ID
 		if err = keep(r); err != nil {

@@ -9,8 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/spf13/cobra"
-
+	"github.com/shigabutdinoff/gophkeeper/internal/account"
 	"github.com/shigabutdinoff/gophkeeper/internal/config"
 )
 
@@ -25,7 +24,7 @@ func resolve(flag string) (config.Settings, error) {
 	}
 	path := filepath.Join(dir, config.File)
 	s, err := config.Load[config.Settings](path)
-	if err != nil {
+	if err = cmp.Or(err, account.Trust(httpClient, s.ServerCert)); err != nil {
 		return config.Settings{}, err
 	}
 	server := cmp.Or(os.Getenv(serverEnv), flag, s.Server)
@@ -41,8 +40,4 @@ func resolve(flag string) (config.Settings, error) {
 	}
 	s.Server = server
 	return s, nil
-}
-
-func serverFlag(cmd *cobra.Command) *string {
-	return cmd.Flags().String("server", "", "`адрес` сервера, если не задана "+serverEnv+", важнее файла настроек")
 }

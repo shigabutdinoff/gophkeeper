@@ -2,6 +2,8 @@ package account
 
 import (
 	"context"
+	"crypto/tls"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -34,6 +36,8 @@ func call(ctx context.Context, client *http.Client, s config.Settings, retry boo
 	resp, err := c.R().SetContext(ctx).SetHeader("apikey", s.AppKey).SetBody(body).SetError(&fail).
 		ForceContentType("application/json").SetAuthToken(bearer).SetResult(reply).Execute(method, path)
 	switch {
+	case errors.As(err, new(*tls.CertificateVerificationError)):
+		return ErrUntrusted
 	case err != nil && (resp == nil || resp.RawResponse == nil):
 		return fmt.Errorf("%w: %w", ErrNoAnswer, err)
 	case resp.IsError():

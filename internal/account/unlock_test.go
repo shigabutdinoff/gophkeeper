@@ -89,3 +89,24 @@ func TestUnlockRetriesBusyRefresh(t *testing.T) {
 	assert.Equal(t, "доступ", keys.Access, "обновление не повторено после перегрузки")
 	assert.NoError(t, keys.Down, "причина сбоя после удачного повтора")
 }
+
+func TestUnlockKeyringBusy(t *testing.T) {
+	g := startGotrue(t, false)
+	_, err := Login(t.Context(), g.client, g.settings, "anna@example.com", "пароль-Анны")
+	require.NoError(t, err, "вход не прошёл")
+	g.set(func(g *gotrue) { g.access = "доступ-2" })
+	calls, orig := 0, set
+	set = func(service, user, password string) error {
+		if calls++; calls == 1 {
+			return errors.New("exit status 45")
+		}
+		return orig(service, user, password)
+	}
+	t.Cleanup(func() { set = orig })
+	keys, err := Unlock(t.Context(), g.client, g.settings, noAsk)
+	require.NoError(t, err, "занятое хранилище секретов прервало команду")
+	assert.NoError(t, keys.Down, "причина сбоя при живом сервере")
+	r, _ := recall()
+	assert.Equal(t, "доступ-2", r.Access, "новый токен доступа не сохранён после повтора")
+	assert.Equal(t, 2, calls, "запись в хранилище не повторена один раз")
+}

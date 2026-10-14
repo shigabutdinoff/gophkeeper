@@ -153,7 +153,7 @@ func TestLoginWithoutKeyring(t *testing.T) {
 	assert.Equal(t, "anna@example.com", asked, "пароль спрошен не для email входа")
 	_, err = Unlock(t.Context(), g.client, g.settings, noAsk)
 	require.Error(t, err, "отказ ввода пароля не вернул ошибку")
-	require.NoError(t, Logout(t.Context(), g.client), "выход без хранилища не прошёл")
+	require.NoError(t, Logout(t.Context(), g.client, g.settings), "выход без хранилища не прошёл")
 }
 
 func TestLoginErrors(t *testing.T) {
@@ -188,10 +188,10 @@ func TestUnlockRotatesRefresh(t *testing.T) {
 
 func TestLogout(t *testing.T) {
 	g := startGotrue(t, false)
-	require.NoError(t, Logout(t.Context(), g.client), "выход без входа вернул ошибку")
+	require.NoError(t, Logout(t.Context(), g.client, g.settings), "выход без входа вернул ошибку")
 	_, err := Login(t.Context(), g.client, g.settings, "anna@example.com", "пароль-Анны")
 	require.NoError(t, err, "вход не прошёл")
-	require.NoError(t, Logout(t.Context(), g.client), "выход не прошёл")
+	require.NoError(t, Logout(t.Context(), g.client, g.settings), "выход не прошёл")
 	_, bearer := g.state()
 	assert.Equal(t, "Bearer доступ", bearer, "выход без токена доступа")
 	snaps.MatchSnapshot(t, g.log(t))
@@ -203,7 +203,7 @@ func TestLogoutWithoutServer(t *testing.T) {
 	_, err := Login(t.Context(), g.client, g.settings, "anna@example.com", "пароль-Анны")
 	require.NoError(t, err, "вход не прошёл")
 	require.NoError(t, keep(record{Server: "https://127.0.0.1:1", Data: "д", Refresh: "о"}), "запись не сохранена")
-	require.NoError(t, Logout(t.Context(), g.client), "выход без сервера не прошёл")
+	require.NoError(t, Logout(t.Context(), g.client, g.settings), "выход без сервера не прошёл")
 	assertForgotten(t, g)
 }
 
@@ -237,7 +237,7 @@ func TestLogoutAfterServerChange(t *testing.T) {
 	other := config.Settings{Server: "https://127.0.0.1:1", AppKey: "другой"}
 	_, err = Unlock(t.Context(), g.client, other, noAsk)
 	require.ErrorIs(t, err, ErrLoggedOut, "вход другого сервера принят")
-	require.NoError(t, Logout(t.Context(), g.client), "выход не прошёл")
+	require.NoError(t, Logout(t.Context(), g.client, g.settings), "выход не прошёл")
 	_, bearer := g.state()
 	assert.Equal(t, "Bearer доступ", bearer, "сессия сервера входа не завершена")
 	assertForgotten(t, g)
@@ -268,7 +268,7 @@ func TestLogoutLockedKeyring(t *testing.T) {
 	_, err := Login(t.Context(), g.client, g.settings, "anna@example.com", "пароль-Анны")
 	require.NoError(t, err, "вход не прошёл")
 	keyring.MockInitWithError(errors.New("заблокировано"))
-	require.Error(t, Logout(t.Context(), g.client), "выход при запертом хранилище прошёл")
+	require.Error(t, Logout(t.Context(), g.client, g.settings), "выход при запертом хранилище прошёл")
 	path, err := sessionPath()
 	require.NoError(t, err, "путь входа не найден")
 	assert.FileExists(t, path, "файл входа удалён")
@@ -282,6 +282,6 @@ func TestLogoutBrokenSessionLockedKeyring(t *testing.T) {
 	require.NoError(t, err, "путь входа не найден")
 	require.NoError(t, os.WriteFile(path, []byte("{"), 0o600), "файл входа не записан")
 	keyring.MockInitWithError(errors.New("заблокировано"))
-	require.Error(t, Logout(t.Context(), g.client), "выход при запертом хранилище прошёл")
+	require.Error(t, Logout(t.Context(), g.client, g.settings), "выход при запертом хранилище прошёл")
 	assert.FileExists(t, path, "файл входа удалён")
 }

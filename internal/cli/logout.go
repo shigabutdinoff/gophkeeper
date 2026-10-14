@@ -1,9 +1,12 @@
 package cli
 
 import (
+	"path/filepath"
+
 	"github.com/spf13/cobra"
 
 	"github.com/shigabutdinoff/gophkeeper/internal/account"
+	"github.com/shigabutdinoff/gophkeeper/internal/config"
 )
 
 func logoutCmd() *cobra.Command {
@@ -14,7 +17,11 @@ func logoutCmd() *cobra.Command {
 		Args:  NoArgs,
 	}
 	cmd.RunE = func(c *cobra.Command, _ []string) error {
-		if err := account.Logout(c.Context(), httpClient); err != nil {
+		var s config.Settings
+		if dir, err := config.Dir(); err == nil {
+			s, _ = config.Load[config.Settings](filepath.Join(dir, config.File))
+		}
+		if err := account.Logout(c.Context(), httpClient, s); err != nil {
 			return err
 		}
 		return report(c, "Выход выполнен.")

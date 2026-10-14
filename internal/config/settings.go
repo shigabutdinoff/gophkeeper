@@ -24,4 +24,6 @@ type Settings struct {
 	QueueCreds string `yaml:"queue_creds_file,omitempty"`
 	// QueueCA задаёт PEM удостоверяющего центра очереди.
 	QueueCA string `yaml:"queue_ca,omitempty"`
+	// ServerCert задаёт путь к файлу сертификата сервера.
+	ServerCert string `yaml:"server_cert,omitempty"`
 }

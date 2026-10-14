@@ -3,15 +3,20 @@ package account
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/shigabutdinoff/gophkeeper/internal/config"
 )
 
-// Logout завершает вход на сервере, где он был выполнен, без файла настроек.
-// Сессии других устройств работают дальше. Запись хранилища и файл входа
-// удаляются, даже если сервер не ответил. Повторный выход проходит без ошибки.
-func Logout(ctx context.Context, client *http.Client) error {
+// Logout завершает вход на сервере, где он был выполнен. Сертификату сервера
+// доверяет по cfg, если cfg описывает этот сервер, иначе как при входе. Вход
+// удаляется локально, даже если сервер не ответил или не доверенный.
+func Logout(ctx context.Context, client *http.Client, cfg config.Settings) error {
 	if r, ok := recall(); ok {
+		if strings.TrimSuffix(cfg.Server, "/") == r.Server {
+			r.Cert = cfg.ServerCert
+		}
+		Trust(client, r.Cert)
 		s := config.Settings{Server: r.Server, AppKey: r.AppKey}
 		t, err := refresh(ctx, client, s, r.Refresh)
 		if err == nil {

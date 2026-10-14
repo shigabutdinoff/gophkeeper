@@ -15,6 +15,8 @@ var (
 	ErrServer = errors.New("сервер вернул ошибку, попробуйте позже")
 	// ErrUnavailable сообщает, что соединения с сервером нет.
 	ErrUnavailable = errors.New("сервер недоступен, попробуйте позже")
+	// ErrUntrusted сообщает, что сертификат сервера не прошёл проверку.
+	ErrUntrusted = errors.New("сертификат сервера не доверенный")
 	// ErrNotFound сообщает, что записи нет у владельца.
 	ErrNotFound = errors.New("запись не найдена")
 )

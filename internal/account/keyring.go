@@ -4,10 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/avast/retry-go/v5"
 	"github.com/zalando/go-keyring"
 )
 
 const service, user = "gophkeeper", "session"
+
+var set = keyring.Set
 
 type record struct {
 	Server  string `json:"server"`
@@ -17,6 +20,7 @@ type record struct {
 	AppKey  string `json:"app_key"`
 	Access  string `json:"access_token"`
 	User    string `json:"user_id"`
+	Cert    string `json:"server_cert"`
 }
 
 func keep(r record) error {
@@ -24,7 +28,7 @@ func keep(r record) error {
 	if err != nil {
 		return fmt.Errorf("запись входа: %w", err)
 	}
-	if err = keyring.Set(service, user, string(data)); err != nil {
+	if err = retry.New(retry.Attempts(3), retry.Delay(retryWait), retry.DelayType(retry.FixedDelay), retry.LastErrorOnly(true)).Do(func() error { return set(service, user, string(data)) }); err != nil {
 		return fmt.Errorf("хранилище секретов: %w", err)
 	}
 	return nil

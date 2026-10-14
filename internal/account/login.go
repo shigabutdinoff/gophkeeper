@@ -18,7 +18,7 @@ func enter(ctx context.Context, client *http.Client, s config.Settings,
 	if err != nil {
 		return false, err
 	}
-	return save(record{Server: s.Server, Email: body["email"], Data: data, Refresh: t.Refresh, AppKey: s.AppKey, Access: t.Access, User: t.User.ID})
+	return save(record{Server: s.Server, Email: body["email"], Data: data, Refresh: t.Refresh, AppKey: s.AppKey, Access: t.Access, User: t.User.ID, Cert: s.ServerCert})
 }
 
 // Login входит на сервер s по email и паролю и запоминает вход. Возвращает

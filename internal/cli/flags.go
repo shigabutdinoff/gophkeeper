@@ -24,6 +24,10 @@ func flagError(_ *cobra.Command, err error) error {
 	return errors.New("неверный флаг")
 }
 
+func serverFlag(cmd *cobra.Command) *string {
+	return cmd.Flags().String("server", "", "`адрес` сервера, если не задана "+serverEnv+", важнее файла настроек")
+}
+
 func flagName(name, shorthands string) string {
 	if shorthands != "" {
 		return "-" + name
