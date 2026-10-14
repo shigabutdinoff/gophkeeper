@@ -1,0 +1,93 @@
+[!db] skip 'не задана GOPHKEEPER_TEST_DATABASE'
+env SUPABASE_URL=
+env SUPABASE_ANON_KEY=
+env SUPABASE_SERVICE_ROLE_KEY=
+env SUPABASE_REGION=
+
+exec sandbox up --own
+stdout 'песочница запущена'
+status
+stdout '^404$'
+status nokey
+stdout '^401$'
+cmp docker.log up.log
+stranger
+settings
+cmp stdout config.txt
+cp $CONFIG/gophkeeper/config.yaml config.before
+cp $CONFIG/gophkeeper/sandbox/cert.pem cert.before
+cp $CONFIG/gophkeeper/sandbox/app_key app.before
+cp $CONFIG/gophkeeper/sandbox/service_key service.before
+cp $CONFIG/gophkeeper/sandbox/token_key.pem token.before
+signin signup
+stdout '^200$'
+signin token
+stdout '^200$'
+signin signup
+stdout '^422$'
+
+exec sandbox up --own
+stdout 'песочница уже запущена'
+
+! exec sandbox up
+! stdout .
+cmp stderr mode.txt
+cmp $CONFIG/gophkeeper/config.yaml config.before
+cmp $CONFIG/gophkeeper/sandbox/service_key service.before
+status
+stdout '^404$'
+
+exec sandbox down
+stdout 'песочница остановлена'
+exec sandbox down
+stdout 'песочница не запущена'
+exec sandbox up --own
+stdout 'песочница запущена'
+cmp $CONFIG/gophkeeper/sandbox/cert.pem cert.before
+cmp $CONFIG/gophkeeper/sandbox/app_key app.before
+cmp $CONFIG/gophkeeper/sandbox/service_key service.before
+cmp $CONFIG/gophkeeper/sandbox/token_key.pem token.before
+status
+stdout '^404$'
+signin refresh
+stdout '^200$'
+signin token
+stdout '^200$'
+signin refresh
+stdout '^200$'
+signin logout
+stdout '^204$'
+signin refresh
+stdout '^400$'
+! grep '@example\.com' $CONFIG/gophkeeper/sandbox/sandbox.log
+! grep '\$2a\$' $CONFIG/gophkeeper/sandbox/sandbox.log
+! grep $ACCESS $CONFIG/gophkeeper/sandbox/sandbox.log
+! grep $REFRESH $CONFIG/gophkeeper/sandbox/sandbox.log
+
+exec sandbox reset
+stdout 'песочница сброшена'
+! exists $CONFIG/gophkeeper/sandbox
+! exists $CONFIG/gophkeeper/config.yaml
+cmp docker.log all.log
+
+-- up.log --
+compose -p gophkeeper-sandbox -f compose.yaml up --detach --wait, каталог песочницы: нет
+-- all.log --
+compose -p gophkeeper-sandbox -f compose.yaml up --detach --wait, каталог песочницы: нет
+compose -p gophkeeper-sandbox -f compose.yaml up --detach --wait, каталог песочницы: есть
+compose -p gophkeeper-sandbox -f compose.yaml down, каталог песочницы: есть
+compose -p gophkeeper-sandbox -f compose.yaml down, каталог песочницы: есть
+compose -p gophkeeper-sandbox -f compose.yaml up --detach --wait, каталог песочницы: есть
+compose -p gophkeeper-sandbox -f compose.yaml down --volumes, каталог песочницы: есть
+-- config.txt --
+# gophkeeper-sandbox: файл записан командой sandbox, повторный запуск его заменяет
+server: https://127.0.0.1:<own>
+app_key: <app_key>
+region: us-east-1
+queue: tls://127.0.0.1:<queue>
+queue_leaf: tls://127.0.0.1:<leaf>
+queue_ca: |
+    <ca>
+server_cert: $CONFIG/gophkeeper/sandbox/ca.pem
+-- mode.txt --
+Ошибка: песочница создана в другом режиме, сначала выполните go run ./cmd/sandbox reset

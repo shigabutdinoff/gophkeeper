@@ -1,0 +1,46 @@
+env XDG_CONFIG_HOME=$WORK
+env GOPHKEEPER_SERVER=
+mkdir $WORK/gophkeeper
+cp config.yaml $WORK/gophkeeper/config.yaml
+
+! exec gophkeeper get
+! stdout .
+cmp stderr noid.txt
+
+! exec gophkeeper get 0199b5e4-7c3a-7d21-9f4e-2a6c8b1d3e57
+! stdout .
+cmp stderr nopath.txt
+
+! exec gophkeeper get 0199b5e4-7c3a-7d21-9f4e-2a6c8b1d3e57 config.yaml
+! stdout .
+cmp stderr taken.txt
+
+! exec gophkeeper get 0199b5e4-7c3a-7d21-9f4e-2a6c8b1d3e57 key
+! stdout .
+cmp stderr loggedout.txt
+! exists key
+
+! exec gophkeeper add --type file
+! stdout .
+cmp stderr loggedout.txt
+
+! exec gophkeeper edit 0199b5e4-7c3a-7d21-9f4e-2a6c8b1d3e57 --file key
+! stdout .
+cmp stderr replace.txt
+
+-- config.yaml --
+server: https://example.invalid
+app_key: ключ-приложения
+region: eu-north-1
+queue: tls://127.0.0.1:1
+queue_leaf: tls://127.0.0.1:2
+-- noid.txt --
+Ошибка: укажите идентификатор записи
+-- nopath.txt --
+Ошибка: укажите путь, по которому сохранить файл
+-- taken.txt --
+Ошибка: по пути config.yaml уже есть файл, укажите другой путь
+-- loggedout.txt --
+Ошибка: сначала войдите в GophKeeper: gophkeeper login
+-- replace.txt --
+Ошибка: чтобы заменить файл, удалите запись и добавьте файл заново

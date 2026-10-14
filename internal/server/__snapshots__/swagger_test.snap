@@ -1,0 +1,4 @@
+
+[TestSwaggerDescribed - 1]
+[]string{"DELETE /rest/v1/records", "DELETE /storage/v1/s3/files/{owner}/{id}", "GET /rest/v1/records", "GET /storage/v1/s3/files/{owner}/{id}", "PATCH /rest/v1/records", "POST /auth/v1/logout", "POST /auth/v1/signup", "POST /auth/v1/token", "POST /rest/v1/records", "PUT /storage/v1/s3/files/{owner}/{id}"}
+---

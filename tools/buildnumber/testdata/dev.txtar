@@ -1,0 +1,5 @@
+exec buildnumber out dev
+cmp out dev.txt
+
+-- dev.txt --
+dev

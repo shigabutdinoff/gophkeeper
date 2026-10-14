@@ -1,0 +1,21 @@
+exec gophkeeper --version
+cmp stdout na.txt
+! stderr .
+
+! exec gophkeeper nosuch
+! stdout .
+cmp stderr command.txt
+
+! exec gophkeeper --nosuch
+! stdout .
+cmp stderr flag.txt
+
+-- na.txt --
+Build version: N/A
+Build number: N/A
+Build date: N/A
+Build commit: N/A
+-- command.txt --
+Ошибка: неизвестная команда "nosuch"
+-- flag.txt --
+Ошибка: неизвестный флаг "--nosuch"

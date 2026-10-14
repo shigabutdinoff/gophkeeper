@@ -1,0 +1,4 @@
+413
+content-length: 308
+content-type: text/plain
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Error xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Resource>files/<owner>/<id></Resource><Code>EntityTooLarge</Code><Message>The object exceeded the maximum allowed size</Message></Error>

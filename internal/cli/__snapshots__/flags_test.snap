@@ -1,0 +1,32 @@
+
+[TestFlagError/--name - 1]
+флагу "--name" нужно значение
+---
+
+[TestFlagError/-n - 1]
+флагу "-n" нужно значение
+---
+
+[TestFlagError/--nosuch - 1]
+неизвестный флаг "--nosuch"
+---
+
+[TestFlagError/-x - 1]
+неизвестный флаг "-x"
+---
+
+[TestFlagError/-hx - 1]
+неизвестный флаг "-x"
+---
+
+[TestFlagError/--help=да - 1]
+неверное значение "да" флага "--help"
+---
+
+[TestFlagError/---x - 1]
+неверный синтаксис флага "---x"
+---
+
+[TestFlagError/--name=x - 1]
+неверный флаг
+---
