@@ -2,7 +2,11 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
+
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 func (a *auth) write(s Settings) http.HandlerFunc {
@@ -20,6 +24,11 @@ func (a *auth) write(s Settings) http.HandlerFunc {
 			return
 		}
 		rows, err := a.save(r, in, where)
+		if pg, ok := errors.AsType[*pgconn.PgError](err); ok && pg.Code == pgerrcode.ForeignKeyViolation {
+			w.Header().Set("Proxy-Status", "PostgREST; error=23503")
+			respond(w, http.StatusConflict, orphan)
+			return
+		}
 		if err != nil {
 			respond(w, http.StatusInternalServerError, internal)
 			return

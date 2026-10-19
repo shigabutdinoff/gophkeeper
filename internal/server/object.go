@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/nats-io/nats.go/jetstream"
+	"go.uber.org/zap"
 )
 
 func (a *auth) object(w http.ResponseWriter, r *http.Request, name, resource string) {
@@ -37,7 +38,7 @@ func (a *auth) object(w http.ResponseWriter, r *http.Request, name, resource str
 
 func (a *auth) failed(w http.ResponseWriter, r *http.Request, err error, resource string) bool {
 	if err != nil {
-		a.log.WithError(err).WithField("path", r.URL.Path).Error("внутренняя ошибка хранилища файлов")
+		a.log.Error("внутренняя ошибка хранилища файлов", zap.Error(err), zap.String("path", r.URL.Path))
 		s3Failed().send(w, resource)
 	}
 	return err == nil

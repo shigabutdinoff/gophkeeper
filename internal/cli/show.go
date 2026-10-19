@@ -8,17 +8,26 @@ import (
 	"github.com/shigabutdinoff/gophkeeper/internal/account"
 )
 
-func showList(c *cobra.Command, o online) error {
+func showList(c *cobra.Command, o online, note string) error {
 	list, err := []account.Entry(nil), o.keys.Down
 	if err == nil {
-		list, err = account.List(c.Context(), httpClient, o.s, o.keys.Access)
+		list, err = account.List(c.Context(), httpClient, o.s, o.keys.Access, note)
+		if err == nil && note == "" {
+			if warn := keepCopy(c, o, list); warn != nil {
+				c.PrintErrln(warn)
+			}
+		}
 	}
 	head := ""
-	switch list = merge(list, o.left); {
+	if err != nil {
+		head = "сервер недоступен, показаны только неотправленные записи\n"
+		if kept, kerr := readCopy(o); kerr == nil {
+			list, head = kept, copyMark+"\n"
+		}
+	}
+	switch list = noted(merge(list, o.left), note); {
 	case err != nil && (o.keys.Down == nil || len(list) == 0):
 		return err
-	case err != nil:
-		head = "сервер недоступен, показаны только неотправленные записи\n"
 	case len(list) == 0:
 		return report(c, "Записей нет.")
 	}

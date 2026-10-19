@@ -23,6 +23,9 @@ func getCmd() *cobra.Command {
 			return fmt.Errorf("по пути %s уже есть файл, укажите другой путь", args[1])
 		}
 		o, e, err := lookup(c, args[0], false)
+		if o.keys.Down != nil {
+			e, err = copyEntry(o, args[0])
+		}
 		if err != nil {
 			return account.Reason(err)
 		}

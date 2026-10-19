@@ -7,6 +7,8 @@ import (
 	"io"
 
 	"github.com/pressly/goose/v3"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -17,7 +19,9 @@ func open(ctx context.Context, s Settings) (*auth, error) {
 	if err != nil {
 		return nil, fmt.Errorf("ключ подписи токенов не прочитан: %w", err)
 	}
-	a.log.SetOutput(cmp.Or(s.Log, io.Discard))
+	cfg := zap.NewProductionEncoderConfig()
+	cfg.EncodeTime = zapcore.ISO8601TimeEncoder
+	a.log = zap.New(zapcore.NewCore(zapcore.NewJSONEncoder(cfg), zapcore.AddSync(cmp.Or(s.Log, io.Discard)), zap.ErrorLevel))
 	a.pauses = s.pauses
 	if a.db, err = gorm.Open(postgres.Open(s.Database), &gorm.Config{Logger: logger.Discard, DisableAutomaticPing: true}); err != nil {
 		return nil, fmt.Errorf("адрес базы данных не разобран: %w", err)

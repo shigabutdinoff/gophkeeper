@@ -159,3 +159,11 @@ func TestWriteSyntax(t *testing.T) {
 	assert.True(t, ok && kept.note == "почта", "негодный запрос изменил запись")
 	assert.Equal(t, 1, r.count(t), "негодный запрос добавил или удалил строку")
 }
+
+func TestWriteMissingOwner(t *testing.T) {
+	r := start(t)
+	owner, id := uuid.New().String(), uuid.New().String()
+	status, body, h := r.write(t, http.MethodPost, putQuery, "service-key", "service-key", fields(owner, id, "почта"))
+	assert.Equal(t, http.StatusConflict, status, "запись без владельца не получила отказ конфликтом: %s", body)
+	assert.Equal(t, "PostgREST; error=23503", h.Get("Proxy-Status"), "обработчик не узнает отказ без владельца")
+}

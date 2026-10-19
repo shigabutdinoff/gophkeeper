@@ -12,7 +12,7 @@ import (
 const maxRows = 1000
 
 func filter(q url.Values) (where clause.Expression, limit int, ok bool) {
-	limit, where = maxRows, clause.Expr{SQL: "true"}
+	limit, all := maxRows, []clause.Expression{clause.Expr{SQL: "true"}}
 	if q.Has("limit") {
 		n, err := strconv.Atoi(q.Get("limit"))
 		if err != nil || n < 0 {
@@ -20,14 +20,28 @@ func filter(q url.Values) (where clause.Expression, limit int, ok bool) {
 		}
 		limit = min(n, maxRows)
 	}
-	if !q.Has("id") {
-		return where, limit, true
+	for _, f := range []struct {
+		name  string
+		parse func(string) (clause.Expression, bool)
+	}{{"id", byID}, {"note", byNote}} {
+		if !q.Has(f.name) {
+			continue
+		}
+		e, ok := f.parse(q.Get(f.name))
+		if !ok {
+			return nil, 0, false
+		}
+		all = append(all, e)
 	}
-	op, id, _ := strings.Cut(q.Get("id"), ".")
+	return clause.And(all...), limit, true
+}
+
+func byID(v string) (clause.Expression, bool) {
+	op, id, _ := strings.Cut(v, ".")
 	u, err := uuid.Parse(id)
 	cmp := map[string]string{"eq": "id = ?", "gt": "id > ?"}[op]
 	if err != nil || cmp == "" {
-		return nil, 0, false
+		return nil, false
 	}
-	return clause.Expr{SQL: cmp, Vars: []any{u.String()}}, limit, true
+	return clause.Expr{SQL: cmp, Vars: []any{u.String()}}, true
 }

@@ -1,8 +1,8 @@
 -- +goose Up
 CREATE TABLE IF NOT EXISTS accounts (
 	id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-	email text NOT NULL UNIQUE,
-	encrypted_password text NOT NULL,
+	email varchar(254) NOT NULL UNIQUE,
+	encrypted_password varchar(60) NOT NULL,
 	created_at timestamptz NOT NULL DEFAULT now()
 );
 

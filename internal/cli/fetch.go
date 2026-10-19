@@ -12,11 +12,11 @@ import (
 	"github.com/shigabutdinoff/gophkeeper/internal/storage"
 )
 
-func fileClient() *http.Client {
+func fileStore(o online) *storage.Client {
 	t, _ := httpClient.Transport.(*http.Transport)
 	t = cmp.Or(t, http.DefaultTransport.(*http.Transport)).Clone()
 	t.ResponseHeaderTimeout = httpClient.Timeout
-	return &http.Client{Transport: t}
+	return storage.New(&http.Client{Transport: t}, o.s.Server, o.s.Region, o.s.AppKey, o.keys.Access)
 }
 
 func fetch(ctx context.Context, files *storage.Client, owner, id string) ([]byte, error) {

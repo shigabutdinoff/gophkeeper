@@ -52,7 +52,7 @@ func TestList(t *testing.T) {
 		query, apikey, bearer = r.URL.Path+"?"+r.URL.RawQuery, r.Header.Get("apikey"), r.Header.Get("Authorization")
 		_, _ = w.Write([]byte(`[{"id":"1","note":"почта"},{"id":"2","note":""},{"id":"3","note":"банк"}]`))
 	})
-	list, err := List(t.Context(), p.client, p.settings, "доступ")
+	list, err := List(t.Context(), p.client, p.settings, "доступ", "")
 	require.NoError(t, err, "список не получен")
 	assert.Equal(t, []Entry{{ID: "1", Note: "почта"}, {ID: "2"}, {ID: "3", Note: "банк"}}, list, "не тот список")
 	assert.Equal(t, "/rest/v1/records?select=id,note,secret&order=id&limit=100", query, "не тот запрос списка")
@@ -90,7 +90,7 @@ func TestListRetriesBusyServer(t *testing.T) {
 			}
 			_, _ = w.Write([]byte(`[{"id":"1"}]`))
 		})
-		list, err := List(t.Context(), p.client, p.settings, "доступ")
+		list, err := List(t.Context(), p.client, p.settings, "доступ", "")
 		require.NoError(t, err, "ответ %d не повторён", status)
 		assert.Len(t, list, 1, "после повтора нет записей")
 		assert.Equal(t, int32(2), p.requests.Load(), "после ответа %d не два запроса", status)
@@ -99,7 +99,7 @@ func TestListRetriesBusyServer(t *testing.T) {
 
 func TestListBusyForever(t *testing.T) {
 	p := startPostgrest(t, func(_ int32, w http.ResponseWriter, _ *http.Request) { w.WriteHeader(503) })
-	_, err := List(t.Context(), p.client, p.settings, "доступ")
+	_, err := List(t.Context(), p.client, p.settings, "доступ", "")
 	assert.ErrorIs(t, err, ErrServer, "постоянная перегрузка не дала ошибку сервера")
 	assert.Equal(t, int32(4), p.requests.Load(), "не четыре попытки")
 }
@@ -109,7 +109,7 @@ func TestListHidesServerDetails(t *testing.T) {
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write([]byte(`{"code":"secret-detail","message":"secret-detail"}`))
 	})
-	_, err := List(t.Context(), p.client, p.settings, "доступ")
+	_, err := List(t.Context(), p.client, p.settings, "доступ", "")
 	require.ErrorIs(t, err, ErrServer, "незнакомая ошибка не дала ошибку сервера")
 	assert.NotContains(t, err.Error(), "secret-detail", "текст сервера попал в ошибку")
 	assert.Equal(t, int32(1), p.requests.Load(), "ответ 500 повторён")
@@ -118,7 +118,7 @@ func TestListHidesServerDetails(t *testing.T) {
 func TestReasonUnavailable(t *testing.T) {
 	p := startPostgrest(t, records(`[]`))
 	p.Close()
-	_, err := List(t.Context(), p.client, p.settings, "доступ")
+	_, err := List(t.Context(), p.client, p.settings, "доступ", "")
 	assert.Equal(t, ErrUnavailable, Reason(err), "отказ соединения не дал «сервер недоступен»")
 }
 
@@ -128,7 +128,7 @@ func TestReasonSilentServer(t *testing.T) {
 	defer close(release)
 	ctx, cancel := context.WithCancelCause(t.Context())
 	time.AfterFunc(50*time.Millisecond, func() { cancel(context.DeadlineExceeded) })
-	_, err := List(ctx, p.client, p.settings, "доступ")
+	_, err := List(ctx, p.client, p.settings, "доступ", "")
 	assert.Equal(t, ErrNoAnswer, Reason(err), "молчащий сервер не дал «сервер не отвечает»")
 	assert.Equal(t, int32(1), p.requests.Load(), "таймаут повторён")
 }
@@ -145,7 +145,7 @@ func TestRetryWritesNothing(t *testing.T) {
 	require.NoError(t, err, "канал не создан")
 	stderr := os.Stderr
 	os.Stderr = w
-	_, _ = List(t.Context(), p.client, p.settings, "доступ")
+	_, _ = List(t.Context(), p.client, p.settings, "доступ", "")
 	os.Stderr = stderr
 	require.NoError(t, w.Close(), "канал не закрыт")
 	out, err := io.ReadAll(r)
@@ -181,7 +181,7 @@ func TestListAllPages(t *testing.T) {
 		rows[i] = Entry{ID: strconv.Itoa(i), Note: "пометка"}
 	}
 	p := startPostgrest(t, paged(t, rows, 1000))
-	list, err := List(t.Context(), p.client, p.settings, "доступ")
+	list, err := List(t.Context(), p.client, p.settings, "доступ", "")
 	require.NoError(t, err, "список не получен")
 	assert.Equal(t, rows, list, "получены не все записи")
 }
@@ -194,7 +194,7 @@ func TestListDeleteBetweenPages(t *testing.T) {
 	p := startPostgrest(t, func(n int32, w http.ResponseWriter, r *http.Request) {
 		paged(t, rows[min(n-1, 1):], 1000)(n, w, r)
 	})
-	list, err := List(t.Context(), p.client, p.settings, "доступ")
+	list, err := List(t.Context(), p.client, p.settings, "доступ", "")
 	require.NoError(t, err, "список не получен")
 	assert.Equal(t, rows, list, "удаление между страницами скрыло запись")
 }
@@ -205,7 +205,7 @@ func TestListLargeNotes(t *testing.T) {
 		rows[i] = Entry{ID: strconv.Itoa(i), Note: strings.Repeat("я", 30000)}
 	}
 	p := startPostgrest(t, paged(t, rows, 1000))
-	list, err := List(t.Context(), p.client, p.settings, "доступ")
+	list, err := List(t.Context(), p.client, p.settings, "доступ", "")
 	require.NoError(t, err, "большой список не получен")
 	assert.Len(t, list, 50, "получены не все записи")
 }
@@ -218,4 +218,15 @@ func TestFindLargeRecord(t *testing.T) {
 	e, err := Find(t.Context(), p.client, p.settings, "доступ", annaRecord)
 	require.NoError(t, err, "большая запись не получена")
 	assert.Equal(t, note, e.Note, "пометка обрезана")
+}
+
+func TestListNote(t *testing.T) {
+	var notes []string
+	p := startPostgrest(t, func(_ int32, w http.ResponseWriter, r *http.Request) {
+		notes = append(notes, r.URL.Query().Get("note"))
+		_, _ = w.Write([]byte(`[]`))
+	})
+	_, err := List(t.Context(), p.client, p.settings, "доступ", `Почта 50%_a\b*`)
+	require.NoError(t, err, "поиск по пометке не прошёл")
+	assert.Equal(t, []string{`ilike.*Почта 50\%\_a\\b**`}, notes, "подстрока ушла не в форме ilike")
 }

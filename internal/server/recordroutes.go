@@ -8,6 +8,7 @@ func (a *auth) recordRoutes(ops chi.Router) {
 	// @Tags records
 	// @Produce json
 	// @Param id query string false "Фильтр по id в виде eq.<uuid> или gt.<uuid>"
+	// @Param note query string false "Поиск по пометке без учёта регистра в виде ilike.*<подстрока>*"
 	// @Param limit query int false "Сколько записей отдать, не больше 1000"
 	// @Success 200 {array} entry
 	// @Failure 400 {object} object{code=string,message=string} "Неверный фильтр"

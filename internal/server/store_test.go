@@ -156,3 +156,18 @@ func TestSessionsDown(t *testing.T) {
 	assert.Empty(t, columns(t, dsn, "sessions"), "таблица сессий осталась после отката")
 	assert.Equal(t, 1, r.rows(t, ""), "откат тронул учётные записи")
 }
+
+func TestAccountOwnsRows(t *testing.T) {
+	r := start(t)
+	anna := r.user(t)
+	r.put(t, anna.User.ID, "почта")
+	conn := connect(t, r.dsn)
+	_, err := conn.Exec(context.Background(), "INSERT INTO sessions (account_id, refresh_token) VALUES (gen_random_uuid(), 'stranger')")
+	assert.Error(t, err, "сессия без учётной записи сохранена")
+	_, err = conn.Exec(context.Background(), "DELETE FROM accounts WHERE id = $1", anna.User.ID)
+	require.NoError(t, err, "учётная запись не удалена")
+	var sessions int
+	require.NoError(t, conn.QueryRow(context.Background(), "SELECT count(*) FROM sessions").Scan(&sessions), "сессии не посчитаны")
+	assert.Zero(t, sessions, "после удаления учётной записи остались её сессии")
+	assert.Zero(t, r.count(t), "после удаления учётной записи остались её записи")
+}

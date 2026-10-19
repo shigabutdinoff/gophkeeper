@@ -136,7 +136,7 @@ func TestRecordsFilters(t *testing.T) {
 	r := start(t)
 	anna := r.user(t)
 	id := uuid.New().String()
-	for _, query := range []string{"?id=eq.abc", "?id=lt." + id, "?id=" + id, "?limit=-1", "?limit=x", "?limit="} {
+	for _, query := range []string{"?id=eq.abc", "?id=lt." + id, "?id=" + id, "?limit=-1", "?limit=x", "?limit=", "?note=abc", "?note=eq.abc"} {
 		status, body := r.records(t, query, anna.Access)
 		assert.Equal(t, http.StatusBadRequest, status, "негодный запрос принят: %s", query)
 		assert.Equal(t, syntax, body, "отказ не в форме PostgREST: %s", query)
@@ -201,8 +201,8 @@ func TestRecordsLogged(t *testing.T) {
 	require.NoError(t, err, "журнал не прочитан")
 	lines := strings.Split(strings.TrimSuffix(string(logged), "\n"), "\n")
 	require.Len(t, lines, 1, "в журнале не одна строка: %s", logged)
-	assert.Regexp(t, `^time="\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d`, lines[0], "в строке журнала нет времени")
-	for _, want := range []string{"level=error", `msg="внутренняя ошибка сервера"`, `relation \"records\" does not exist`, "path=/rest/v1/records"} {
+	assert.Regexp(t, `"ts":"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d`, lines[0], "в строке журнала нет времени")
+	for _, want := range []string{`"level":"error"`, `"msg":"внутренняя ошибка сервера"`, `relation \"records\" does not exist`, `"path":"/rest/v1/records"`} {
 		assert.Contains(t, lines[0], want, "в строке журнала нет причины или пути")
 	}
 	for _, secret := range []string{anna.Access, "c2VjcmV0", "select=", "limit"} {

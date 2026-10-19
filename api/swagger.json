@@ -240,6 +240,12 @@
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "Поиск по пометке без учёта регистра в виде ilike.*\u003cподстрока\u003e*",
+                        "name": "note",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "description": "Сколько записей отдать, не больше 1000",
                         "name": "limit",
@@ -374,6 +380,20 @@
                     },
                     "403": {
                         "description": "Токен пользователя вместо служебного ключа",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "code": {
+                                    "type": "string"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Владельца нет на сервере",
                         "schema": {
                             "type": "object",
                             "properties": {

@@ -75,7 +75,7 @@ func TestListFile(t *testing.T) {
 	one, _, err := executeIn(keyboard(t, true, ""), "list", f.rec.ID)
 	require.NoError(t, err, "запись о файле не получена")
 	snaps.MatchSnapshot(t, recordID.ReplaceAllString(out, "<id>"), one)
-	assert.Zero(t, f.objects.Load(), "список читал содержимое файла")
+	assert.Equal(t, int32(1), f.objects.Load(), "список не скачал файл в копию один раз")
 }
 
 func TestGet(t *testing.T) {

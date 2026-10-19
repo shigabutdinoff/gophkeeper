@@ -11,7 +11,7 @@ import (
 	"github.com/shigabutdinoff/gophkeeper/internal/record"
 )
 
-const unsentMark = "не отправлено"
+const unsentMark, copyMark = "не отправлено", "сервер недоступен, показаны записи с устройства"
 
 func merge(list []account.Entry, left map[string]record.Change) []account.Entry {
 	all := map[string]account.Entry{}
@@ -39,7 +39,8 @@ func pick(ctx context.Context, o online, id string) (account.Entry, string, erro
 	case unsent:
 		return account.Entry{ID: c.Record, Note: c.Note, Secret: c.Secret}, "\n" + unsentMark, nil
 	case o.keys.Down != nil:
-		return account.Entry{}, "", o.keys.Down
+		e, err := copyEntry(o, u.String())
+		return e, "\n" + copyMark, err
 	}
 	e, err := account.Find(ctx, httpClient, o.s, o.keys.Access, u.String())
 	return e, "", err

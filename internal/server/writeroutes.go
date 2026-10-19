@@ -14,6 +14,7 @@ func (a *auth) writeRoutes(ops chi.Router, s Settings) {
 	// @Failure 400 {object} object{code=string,message=string} "Неверное тело"
 	// @Failure 401 {object} object{code=string,message=string} "Нет служебного ключа"
 	// @Failure 403 {object} object{code=string,message=string} "Токен пользователя вместо служебного ключа"
+	// @Failure 409 {object} object{code=string,message=string} "Владельца нет на сервере"
 	// @Security ProjectKey && Bearer
 	// @Router /rest/v1/records [post]
 	ops.Post("/rest/v1/records", a.write(s))

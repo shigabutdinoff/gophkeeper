@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -41,8 +42,15 @@ func TestLogin(t *testing.T) {
 	assert.Equal(t, reference(t, "token_ok.txt"), answer(status, masked(t, body)), "ответ входа не равен эталону Supabase")
 	assert.Equal(t, id, parse(t, body).User.ID, "вход вернул другого пользователя")
 
+	began := time.Now()
 	status, body = r.login(t, email, rand.Text())
+	known := time.Since(began)
 	assert.Equal(t, reference(t, "invalid_credentials.txt"), answer(status, body), "отказ неверному паролю не равен эталону Supabase")
+	began = time.Now()
+	status, body = r.login(t, newEmail(), password)
+	unknown := time.Since(began)
+	assert.Equal(t, reference(t, "invalid_credentials.txt"), answer(status, body), "отказ незарегистрированному адресу отличается от отказа неверному паролю")
+	assert.Greater(t, unknown, known/2, "незарегистрированный адрес отвечает заметно быстрее: %v против %v", unknown, known)
 }
 
 func TestRefusals(t *testing.T) {
@@ -56,7 +64,10 @@ func TestRefusals(t *testing.T) {
 		"адрес не по форме":          func() (int, string) { return r.signup(t, "anna.example.com", password) },
 		"пустой ключ входа":          func() (int, string) { return r.signup(t, newEmail(), "") },
 		"ключ входа длиннее 72 байт": func() (int, string) { return r.signup(t, newEmail(), long) },
-		"негодный JSON":              func() (int, string) { return r.post(t, "/auth/v1/signup", "app-key", "не объект") },
+		"адрес длиннее 254 знаков": func() (int, string) {
+			return r.signup(t, strings.Repeat("a", 250)+"@example.com", password)
+		},
+		"негодный JSON": func() (int, string) { return r.post(t, "/auth/v1/signup", "app-key", "не объект") },
 		"тело больше предела": func() (int, string) {
 			s, b, _ := r.send(t, http.MethodPost, "/auth/v1/signup", "app-key", []byte(big))
 			return s, b
@@ -66,7 +77,6 @@ func TestRefusals(t *testing.T) {
 		"вход без вида доступа": func() (int, string) {
 			return r.post(t, "/auth/v1/token", "app-key", map[string]string{"email": email, "password": password})
 		},
-		"незарегистрированный адрес": func() (int, string) { return r.login(t, newEmail(), password) },
 	} {
 		got, refusal := send()
 		assert.Contains(t, []int{http.StatusBadRequest, http.StatusInternalServerError}, got, "запрос не получил общий отказ: %s: %s", name, refusal)
@@ -142,7 +152,7 @@ func TestLostTable(t *testing.T) {
 	email, password := newEmail(), rand.Text()
 	status, body := r.signup(t, email, password)
 	require.Equal(t, http.StatusOK, status, "регистрация отклонена: %s", body)
-	_, err := connect(t, r.dsn).Exec(context.Background(), "DROP TABLE accounts")
+	_, err := connect(t, r.dsn).Exec(context.Background(), "DROP TABLE accounts CASCADE")
 	require.NoError(t, err, "таблица не удалена")
 	for name, send := range map[string]func(*testing.T, string, string) (int, string){"вход": r.login, "регистрация": r.signup} {
 		status, body = send(t, email, password)

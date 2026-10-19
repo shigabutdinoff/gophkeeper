@@ -5,14 +5,12 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/avast/retry-go/v5"
 	"github.com/dustin/go-humanize"
 	"github.com/google/renameio/v2/maybe"
 	"github.com/spf13/cobra"
 
 	"github.com/shigabutdinoff/gophkeeper/internal/account"
 	"github.com/shigabutdinoff/gophkeeper/internal/record"
-	"github.com/shigabutdinoff/gophkeeper/internal/storage"
 )
 
 var errDamaged = errors.New("файл записи повреждён или пропал на сервере, удалите запись и добавьте файл заново")
@@ -32,10 +30,7 @@ func save(c *cobra.Command, o online, e account.Entry, path string) error {
 	case o.s.Region == "":
 		return errNoRegion
 	}
-	files := storage.New(fileClient(), o.s.Server, o.s.Region, o.s.AppKey, o.keys.Access)
-	sealed, err := retry.NewWithData[[]byte](retry.Context(c.Context()), retry.Attempts(3), retry.LastErrorOnly(true),
-		retry.RetryIf(func(err error) bool { return errors.Is(err, account.ErrUnavailable) }),
-	).Do(func() ([]byte, error) { return fetch(c.Context(), files, o.keys.User, e.ID) })
+	sealed, err := sealedFile(c, o, e)
 	if err != nil {
 		return err
 	}

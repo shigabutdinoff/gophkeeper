@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/golang-jwt/jwt/v5/request"
+	"go.uber.org/zap"
 )
 
 type entry struct {
@@ -30,7 +31,7 @@ func (a *auth) records(w http.ResponseWriter, r *http.Request) {
 			Where(where).Order("id").Limit(limit).Find(&list).Error
 	})
 	if err != nil {
-		a.log.WithError(err).WithField("path", r.URL.Path).Error("внутренняя ошибка сервера")
+		a.log.Error("внутренняя ошибка сервера", zap.Error(err), zap.String("path", r.URL.Path))
 		respond(w, http.StatusInternalServerError, internal)
 		return
 	}

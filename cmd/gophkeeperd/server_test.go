@@ -264,5 +264,5 @@ func TestServerLog(t *testing.T) {
 	require.NoError(t, <-done, "сервер остановился с ошибкой")
 	logged, err := os.ReadFile(out.Name())
 	require.NoError(t, err, "вывод не прочитан")
-	assert.Contains(t, string(logged), `msg="внутренняя ошибка сервера"`, "строка журнала не попала в stderr")
+	assert.Contains(t, string(logged), `"msg":"внутренняя ошибка сервера"`, "строка журнала не попала в stderr")
 }
