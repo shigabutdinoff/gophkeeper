@@ -1,0 +1,20 @@
+
+[TestSignupBadServer - 1]
+адрес сервера "https://a b": parse "https://a b": invalid character " " in host name
+---
+
+[TestSignup/exists - 1]
+пользователь уже зарегистрирован
+---
+
+[TestSignup/unknown - 1]
+сервер вернул ошибку, попробуйте позже
+---
+
+[TestSignup/not_json - 1]
+сервер вернул ошибку, попробуйте позже
+---
+
+[TestSignup/silent - 1]
+сервер не отвечает, попробуйте позже: Post "$SERVER/auth/v1/signup": context deadline exceeded (Client.Timeout exceeded while awaiting headers)
+---

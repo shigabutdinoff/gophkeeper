@@ -1,0 +1,56 @@
+exec git init -q
+exec git commit -q --allow-empty -m c1
+exec git commit -q --allow-empty -m c2
+exec git tag -a 27.0 -m 27.0
+exec git tag nightly
+exec git tag v27.0
+exec buildnumber out 27.0
+cmp out 27.0.txt
+
+exec git commit -q --allow-empty -m c3
+exec git tag -a 27.1-beta -m 27.1-beta
+exec buildnumber out 27.1-beta
+cmp out 27.1-beta.txt
+
+exec git checkout -q -b hotfix 27.0
+exec git commit -q --allow-empty -m h1
+exec git tag -a 27.0.1 -m 27.0.1
+exec buildnumber out 27.0.1
+cmp out 27.0.1.txt
+
+exec git checkout -q -
+exec git merge -q --no-ff -m m1 hotfix
+exec git commit -q --allow-empty -m c4
+exec git tag -a 27.1-beta.2 -m 27.1-beta.2
+exec buildnumber out 27.1-beta.2
+cmp out 27.1-beta.2.txt
+
+exec git commit -q --allow-empty -m c5
+exec git tag -a 27.1-rc -m 27.1-rc
+exec buildnumber out 27.1-rc
+cmp out 27.1-rc.txt
+
+exec git commit -q --allow-empty -m c6
+exec git tag -a 27.1 -m 27.1
+exec buildnumber out 27.1
+cmp out 27.1.txt
+
+exec git commit -q --allow-empty -m c7
+exec git tag -a 28.0-beta -m 28.0-beta
+exec buildnumber out 28.0-beta
+cmp out 28.0-beta.txt
+
+-- 27.0.txt --
+27A2
+-- 27.1-beta.txt --
+27B5001a
+-- 27.0.1.txt --
+27A3
+-- 27.1-beta.2.txt --
+27B5004b
+-- 27.1-rc.txt --
+27B5
+-- 27.1.txt --
+27B6
+-- 28.0-beta.txt --
+28A5001a

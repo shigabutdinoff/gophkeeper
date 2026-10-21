@@ -1,0 +1,10 @@
+env SUPABASE_URL=
+env SUPABASE_ANON_KEY=
+env SUPABASE_SERVICE_ROLE_KEY=
+env SUPABASE_REGION=
+
+occupy
+! exec sandbox up --own
+! stdout .
+stderr 'подробности в ".*sandbox\.log"'
+grep 'адрес своего сервера .* не открыт' $CONFIG/gophkeeper/sandbox/sandbox.log

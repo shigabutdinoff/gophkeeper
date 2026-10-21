@@ -1,0 +1,641 @@
+definitions:
+  server.credentials:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - password
+    type: object
+  server.entry:
+    properties:
+      id:
+        type: string
+      note:
+        type: string
+      secret:
+        type: string
+    type: object
+  server.identity:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      identity_data:
+        $ref: '#/definitions/server.profile'
+      identity_id:
+        type: string
+      last_sign_in_at:
+        type: string
+      provider:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: string
+    type: object
+  server.issued:
+    properties:
+      access_token:
+        type: string
+      expires_at:
+        type: integer
+      expires_in:
+        type: integer
+      refresh_token:
+        type: string
+      token_type:
+        type: string
+      user:
+        $ref: '#/definitions/server.user'
+      weak_password:
+        type: object
+        x-nullable: true
+    type: object
+  server.profile:
+    properties:
+      email:
+        type: string
+      email_verified:
+        type: boolean
+      phone_verified:
+        type: boolean
+      sub:
+        type: string
+    type: object
+  server.stored:
+    properties:
+      id:
+        type: string
+      note:
+        type: string
+      secret:
+        type: string
+      user_id:
+        type: string
+    type: object
+  server.user:
+    properties:
+      app_metadata:
+        additionalProperties: {}
+        type: object
+      aud:
+        type: string
+      confirmed_at:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      email_confirmed_at:
+        type: string
+      id:
+        type: string
+      identities:
+        items:
+          $ref: '#/definitions/server.identity'
+        type: array
+      is_anonymous:
+        type: boolean
+      last_sign_in_at:
+        type: string
+      phone:
+        type: string
+      role:
+        type: string
+      updated_at:
+        type: string
+      user_metadata:
+        $ref: '#/definitions/server.profile'
+    type: object
+info:
+  contact: {}
+  description: |-
+    Собственный сервер GophKeeper. Отвечает на те же адреса и в том же формате, что Supabase Auth,
+    PostgREST и S3 в Supabase Storage, поэтому клиент работает и с ним, и с облачным Supabase.
+  license:
+    name: MIT
+  title: GophKeeper
+  version: "27.0"
+paths:
+  /auth/v1/logout:
+    post:
+      description: |-
+        Завершает сессию токена входа. Повторяет метод /logout Supabase Auth
+        https://github.com/supabase/auth/blob/ce9a8eee0cc042be8c7a42981a7ddae631e41d91/openapi.yaml (лицензия MIT).
+      parameters:
+      - description: Какие сессии завершить
+        enum:
+        - local
+        in: query
+        name: scope
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: validation_failed
+          schema:
+            properties:
+              code:
+                type: integer
+              error_code:
+                type: string
+              msg:
+                type: string
+            type: object
+      security:
+      - Bearer: []
+        ProjectKey: []
+      summary: Выход на этом устройстве
+      tags:
+      - auth
+  /auth/v1/signup:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Создаёт учётную запись и сразу выдаёт сессию. Повторяет метод /signup Supabase Auth
+        https://github.com/supabase/auth/blob/ce9a8eee0cc042be8c7a42981a7ddae631e41d91/openapi.yaml (лицензия MIT).
+      parameters:
+      - description: Почта и пароль
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/server.credentials'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/server.issued'
+        "400":
+          description: validation_failed
+          schema:
+            properties:
+              code:
+                type: integer
+              error_code:
+                type: string
+              msg:
+                type: string
+            type: object
+        "422":
+          description: user_already_exists
+          schema:
+            properties:
+              code:
+                type: integer
+              error_code:
+                type: string
+              msg:
+                type: string
+            type: object
+      security:
+      - ProjectKey: []
+      summary: Регистрация пользователя
+      tags:
+      - auth
+  /auth/v1/token:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Выдаёт токены по паролю (grant_type=password, тело с email и password) или по токену
+        продления (grant_type=refresh_token, тело с refresh_token). Повторяет метод /token Supabase Auth
+        https://github.com/supabase/auth/blob/ce9a8eee0cc042be8c7a42981a7ddae631e41d91/openapi.yaml (лицензия MIT).
+      parameters:
+      - description: Способ входа
+        enum:
+        - password
+        - refresh_token
+        in: query
+        name: grant_type
+        required: true
+        type: string
+      - description: Почта и пароль или токен продления
+        in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            email:
+              type: string
+            password:
+              type: string
+            refresh_token:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/server.issued'
+        "400":
+          description: invalid_credentials, refresh_token_not_found или validation_failed
+          schema:
+            properties:
+              code:
+                type: integer
+              error_code:
+                type: string
+              msg:
+                type: string
+            type: object
+      security:
+      - ProjectKey: []
+      summary: Вход и продление сессии
+      tags:
+      - auth
+  /rest/v1/records:
+    delete:
+      description: Удаляет запись владельца. Только со служебным ключом. Как PostgREST
+        в Supabase.
+      parameters:
+      - description: Владелец в виде eq.<uuid>
+        in: query
+        name: user_id
+        required: true
+        type: string
+      - description: Запись в виде eq.<uuid>
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Удалённые записи, пустой массив если записи нет
+          schema:
+            items:
+              properties:
+                user_id:
+                  type: string
+              type: object
+            type: array
+        "400":
+          description: Неверный фильтр
+          schema:
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+            type: object
+        "401":
+          description: Нет служебного ключа
+          schema:
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+            type: object
+        "403":
+          description: Токен пользователя вместо служебного ключа
+          schema:
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+            type: object
+      security:
+      - Bearer: []
+        ProjectKey: []
+      summary: Удаление записи
+      tags:
+      - records
+    get:
+      description: Отдаёт записи владельца токена входа по возрастанию id, не больше
+        1000 за запрос. Как PostgREST в Supabase.
+      parameters:
+      - description: Фильтр по id в виде eq.<uuid> или gt.<uuid>
+        in: query
+        name: id
+        type: string
+      - description: Поиск по пометке без учёта регистра в виде ilike.*<подстрока>*
+        in: query
+        name: note
+        type: string
+      - description: Сколько записей отдать, не больше 1000
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/server.entry'
+            type: array
+        "400":
+          description: Неверный фильтр
+          schema:
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+            type: object
+        "401":
+          description: Токен входа не подходит
+          schema:
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+            type: object
+      security:
+      - Bearer: []
+        ProjectKey: []
+      summary: Записи владельца токена
+      tags:
+      - records
+    patch:
+      consumes:
+      - application/json
+      description: Меняет note и secret записи владельца. Только со служебным ключом.
+        Как PostgREST в Supabase.
+      parameters:
+      - description: Владелец в виде eq.<uuid>
+        in: query
+        name: user_id
+        required: true
+        type: string
+      - description: Запись в виде eq.<uuid>
+        in: query
+        name: id
+        required: true
+        type: string
+      - description: Новые note и secret
+        in: body
+        name: record
+        required: true
+        schema:
+          properties:
+            note:
+              type: string
+            secret:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Изменённые записи, пустой массив если записи нет
+          schema:
+            items:
+              properties:
+                user_id:
+                  type: string
+              type: object
+            type: array
+        "400":
+          description: Неверный фильтр или тело
+          schema:
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+            type: object
+        "401":
+          description: Нет служебного ключа
+          schema:
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+            type: object
+        "403":
+          description: Токен пользователя вместо служебного ключа
+          schema:
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+            type: object
+      security:
+      - Bearer: []
+        ProjectKey: []
+      summary: Изменение записи
+      tags:
+      - records
+    post:
+      consumes:
+      - application/json
+      description: Создаёт запись или заменяет note и secret существующей. Только
+        со служебным ключом. Как PostgREST в Supabase.
+      parameters:
+      - description: Запись с id и user_id
+        in: body
+        name: record
+        required: true
+        schema:
+          $ref: '#/definitions/server.stored'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Запись заменена
+          schema:
+            items:
+              properties:
+                user_id:
+                  type: string
+              type: object
+            type: array
+        "201":
+          description: Запись создана
+          schema:
+            items:
+              properties:
+                user_id:
+                  type: string
+              type: object
+            type: array
+        "400":
+          description: Неверное тело
+          schema:
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+            type: object
+        "401":
+          description: Нет служебного ключа
+          schema:
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+            type: object
+        "403":
+          description: Токен пользователя вместо служебного ключа
+          schema:
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+            type: object
+        "409":
+          description: Владельца нет на сервере
+          schema:
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+            type: object
+      security:
+      - Bearer: []
+        ProjectKey: []
+      summary: Сохранение записи
+      tags:
+      - records
+  /storage/v1/s3/files/{owner}/{id}:
+    delete:
+      description: Удаляет файл, отсутствующий файл тоже считается удалённым. Только
+        со служебным ключом. Как S3 в Supabase Storage.
+      parameters:
+      - description: Владелец записи
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Файл
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "204":
+          description: No Content
+        "403":
+          description: Ошибка S3 в XML, нет служебного ключа
+          schema:
+            type: string
+      security:
+      - S3Token: []
+      summary: Удаление файла
+      tags:
+      - files
+    get:
+      description: Отдаёт файл владельцу токена входа или со служебным ключом в X-Amz-Security-Token.
+        Как S3 в Supabase Storage.
+      parameters:
+      - description: Владелец записи
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Файл
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      - text/plain
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "403":
+          description: Ошибка S3 в XML, токен не подходит
+          schema:
+            type: string
+        "404":
+          description: Ошибка S3 в XML, файла нет или он чужой
+          schema:
+            type: string
+      security:
+      - S3Token: []
+      summary: Выдача файла
+      tags:
+      - files
+    put:
+      consumes:
+      - application/octet-stream
+      description: |-
+        Сохраняет файл записи до 50 МиБ. Только со служебным ключом в X-Amz-Security-Token. Как S3 в Supabase Storage,
+        подпись SigV4 клиент S3 ставит сам, сервер её не проверяет.
+      parameters:
+      - description: Владелец записи
+        in: path
+        name: owner
+        required: true
+        type: string
+      - description: Файл
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Содержимое файла
+        in: body
+        name: file
+        required: true
+        schema:
+          type: string
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: Файл сохранён, ETag в заголовке
+        "403":
+          description: Ошибка S3 в XML, нет служебного ключа
+          schema:
+            type: string
+        "413":
+          description: Ошибка S3 в XML, файл больше предела
+          schema:
+            type: string
+      security:
+      - S3Token: []
+      summary: Сохранение файла
+      tags:
+      - files
+schemes:
+- https
+securityDefinitions:
+  Bearer:
+    description: Bearer и токен входа, для сохранения и удаления записей Bearer и
+      служебный ключ.
+    in: header
+    name: Authorization
+    type: apiKey
+  ProjectKey:
+    description: Ключ проекта, публичный или служебный.
+    in: header
+    name: apikey
+    type: apiKey
+  S3Token:
+    description: Токен входа или служебный ключ.
+    in: header
+    name: X-Amz-Security-Token
+    type: apiKey
+swagger: "2.0"

@@ -1,0 +1,19 @@
+
+[TestQueueClient - 1]
+nats: permissions violation: Permissions Violation for Publish to "$JS.API.CONSUMER.CREATE.CHANGES"
+nats: permissions violation: Permissions Violation for Publish to "$JS.API.DIRECT.GET.CHANGES"
+nats: permissions violation: Permissions Violation for Publish to "$JS.API.STREAM.DELETE.CHANGES"
+nats: permissions violation: Permissions Violation for Publish to "$JS.API.STREAM.MSG.DELETE.CHANGES"
+nats: permissions violation: Permissions Violation for Publish to "$JS.API.STREAM.MSG.GET.CHANGES"
+nats: permissions violation: Permissions Violation for Publish to "$JS.API.STREAM.PURGE.CHANGES"
+nats: permissions violation: Permissions Violation for Publish to "$SYS.REQ.USER.AUTH"
+nats: permissions violation: Permissions Violation for Publish to "changes.files.0199b5e4-0000-7000-8000-00000000a11a"
+nats: permissions violation: Permissions Violation for Publish to "changes.records"
+nats: permissions violation: Permissions Violation for Publish to "changes.records.0199b5e4-0000-7000-8000-0000000b0715"
+nats: permissions violation: Permissions Violation for Subscription to "$SYS.REQ.USER.AUTH"
+nats: permissions violation: Permissions Violation for Subscription to "_INBOX.0199b5e4-0000-7000-8000-0000000b0715.>"
+nats: permissions violation: Permissions Violation for Subscription to "_INBOX.>"
+nats: permissions violation: Permissions Violation for Subscription to "_INBOX.adm.>"
+nats: permissions violation: Permissions Violation for Subscription to "changes.>"
+nats: permissions violation: Permissions Violation for Subscription to "changes.records.0199b5e4-0000-7000-8000-00000000a11a"
+---

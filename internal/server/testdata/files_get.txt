@@ -1,0 +1,7 @@
+200
+cache-control: no-cache
+content-length: 19
+content-type: application/octet-stream
+etag: <etag>
+last-modified: <date>
+шифр файла

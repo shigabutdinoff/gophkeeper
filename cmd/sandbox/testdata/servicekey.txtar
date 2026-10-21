@@ -1,0 +1,8 @@
+env SUPABASE_SERVICE_ROLE_KEY=
+! exec sandbox up
+! stdout .
+cmp stderr missing.txt
+! exists $CONFIG/gophkeeper/sandbox
+
+-- missing.txt --
+Ошибка: не заданы SUPABASE_SERVICE_ROLE_KEY

@@ -1,0 +1,7 @@
+! exec sandbox cloud
+! stdout .
+cmp stderr missing.txt
+! exists $CONFIG/gophkeeper
+
+-- missing.txt --
+Ошибка: не заданы SYNADIA_ADMIN_CREDS, SYNADIA_CLIENT_CREDS

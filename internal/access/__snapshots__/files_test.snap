@@ -1,0 +1,22 @@
+
+[TestBucketOwnerOnly - 1]
+nats: permissions violation: Permissions Violation for Publish to "files.open.0199b5e4-0000-7000-8000-00000000a11a"
+nats: permissions violation: Permissions Violation for Publish to "$JS.API.STREAM.INFO.OBJ_<корзина>"
+nats: permissions violation: Permissions Violation for Publish to "$JS.API.STREAM.MSG.GET.OBJ_<корзина>"
+nats: permissions violation: Permissions Violation for Publish to "$JS.API.DIRECT.GET.OBJ_<корзина>"
+nats: permissions violation: Permissions Violation for Publish to "$JS.API.DIRECT.GET.OBJ_<корзина>.$O.<корзина>.M.x"
+nats: permissions violation: Permissions Violation for Publish to "$JS.API.CONSUMER.CREATE.OBJ_<корзина>"
+nats: permissions violation: Permissions Violation for Publish to "$JS.API.STREAM.PURGE.OBJ_<корзина>"
+nats: permissions violation: Permissions Violation for Publish to "$O.<корзина>.C.x"
+nats: permissions violation: Permissions Violation for Publish to "$O.<корзина>.M.x"
+nats: permissions violation: Permissions Violation for Publish to "$JS.API.STREAM.NAMES"
+nats: permissions violation: Permissions Violation for Publish to "$JS.API.STREAM.LIST"
+nats: permissions violation: Permissions Violation for Subscription to "$O.<корзина>.>"
+---
+
+[TestBucketOwnerOnly - 2]
+nats: permissions violation: Permissions Violation for Publish to "$JS.API.STREAM.CREATE.OBJ_<корзина>"
+nats: permissions violation: Permissions Violation for Publish to "$JS.API.STREAM.UPDATE.OBJ_<корзина>"
+nats: permissions violation: Permissions Violation for Publish to "$JS.API.STREAM.DELETE.OBJ_<корзина>"
+nats: permissions violation: Permissions Violation for Publish to "$JS.API.STREAM.CREATE.OBJ_x"
+---
