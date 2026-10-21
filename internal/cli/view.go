@@ -7,7 +7,7 @@ import (
 )
 
 func showRecord(c *cobra.Command, o online, id string) error {
-	e, mark, err := pick(c.Context(), o, id)
+	e, mark, err := pick(c, o, id)
 	if err != nil {
 		return err
 	}

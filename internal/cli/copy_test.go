@@ -199,3 +199,27 @@ func TestCopyUnwritable(t *testing.T) {
 	assert.Contains(t, out, f.rec.ID, "записи нет в списке")
 	assert.Contains(t, errOut, "копию записей на устройстве обновить не удалось", "нет предупреждения о копии")
 }
+
+func TestCopyUnreadable(t *testing.T) {
+	msg, id := unsentPut(t, annaData(t), map[string]string{"login": "anna", "password": "new"}, "новая")
+	kept := sealed(t, "bob", "q", "банк")
+	srv, q := queueDown(t, kept)
+	_, _, err := executeIn(keyboard(t, true, ""), "list")
+	require.NoError(t, err, "список не получен")
+	onDevice(t, q, msg)
+	srv.Close()
+	dir, err := copyDir(annaID)
+	require.NoError(t, err, "каталог копии не найден")
+	path := filepath.Join(dir, copyList)
+	require.NoError(t, os.Truncate(path, 10), "копия не испорчена")
+	out, errOut, err := noServerOut(t, "", "list")
+	require.NoError(t, err, "список без сервера не показан")
+	assert.Contains(t, out, id, "неотправленной записи нет")
+	one, oneErr, err := noServerOut(t, "", "list", kept.ID)
+	assert.Equal(t, account.ErrUnavailable, err, "нет «сервер недоступен» для записи")
+	snaps.MatchSnapshot(t, recordID.ReplaceAllString(out, "<id>"), errOut, one, oneErr)
+	require.NoError(t, os.Remove(path), "копия не удалена")
+	_, errOut, err = noServerOut(t, "", "list")
+	require.NoError(t, err, "список без копии не показан")
+	assert.Empty(t, errOut, "надпись о копии без копии")
+}

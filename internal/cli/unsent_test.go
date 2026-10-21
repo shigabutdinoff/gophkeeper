@@ -52,10 +52,15 @@ func unsentPut(t *testing.T, data string, fields map[string]string, note string)
 
 func noServer(t *testing.T, password string, args ...string) (string, error) {
 	t.Helper()
+	out, _, err := noServerOut(t, password, args...)
+	return out, err
+}
+
+func noServerOut(t *testing.T, password string, args ...string) (out, errOut string, err error) {
+	t.Helper()
 	ctx, cancel := context.WithTimeout(t.Context(), 300*time.Millisecond)
 	defer cancel()
-	out, _, err := executeCtx(ctx, keyboard(t, true, password), args...)
-	return out, err
+	return executeCtx(ctx, keyboard(t, true, password), args...)
 }
 
 func TestListUnsentOffline(t *testing.T) {

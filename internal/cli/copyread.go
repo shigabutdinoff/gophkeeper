@@ -3,9 +3,12 @@ package cli
 import (
 	"encoding/json"
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"uuid"
+
+	"github.com/spf13/cobra"
 
 	"github.com/shigabutdinoff/gophkeeper/internal/account"
 	"github.com/shigabutdinoff/gophkeeper/internal/config"
@@ -25,7 +28,7 @@ func copyDir(user string) (string, error) {
 	return filepath.Join(dir, "copy", user), nil
 }
 
-func readCopy(o online) ([]account.Entry, error) {
+func readCopy(c *cobra.Command, o online) ([]account.Entry, error) {
 	dir, err := copyDir(o.keys.User)
 	var sealed, raw []byte
 	if err == nil {
@@ -37,6 +40,9 @@ func readCopy(o online) ([]account.Entry, error) {
 	var list []account.Entry
 	if err == nil {
 		err = json.Unmarshal(raw, &list)
+	}
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		c.PrintErrln("копию записей на устройстве прочитать не удалось:", err)
 	}
 	return list, err
 }

@@ -24,7 +24,7 @@ func getCmd() *cobra.Command {
 		}
 		o, e, err := lookup(c, args[0], false)
 		if o.keys.Down != nil {
-			e, err = copyEntry(o, args[0])
+			e, err = copyEntry(c, o, e.ID)
 		}
 		if err != nil {
 			return account.Reason(err)

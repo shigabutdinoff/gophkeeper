@@ -6,7 +6,7 @@ import (
 )
 
 type credentials struct {
-	Email    string `json:"email" validate:"email"`
+	Email    string `json:"email" validate:"email,max=254"`
 	Password string `json:"password" validate:"required"`
 }
 

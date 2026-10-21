@@ -15,16 +15,16 @@ func lookup(c *cobra.Command, id string, unchecked bool) (online, account.Entry,
 	if err != nil {
 		return online{}, account.Entry{}, account.ErrNotFound
 	}
+	e := account.Entry{ID: u.String()}
 	o, err := connect(c)
 	if err == nil {
 		err = queue.Check(o.s)
 	}
 	if err != nil {
-		return o, account.Entry{}, err
+		return o, e, err
 	}
-	var e account.Entry
 	if err = o.keys.Down; err == nil {
-		e, err = account.Find(c.Context(), httpClient, o.s, o.keys.Access, u.String())
+		e, err = account.Find(c.Context(), httpClient, o.s, o.keys.Access, e.ID)
 	}
 	if unchecked && errors.Is(err, account.ErrNoAnswer) {
 		return o, account.Entry{ID: u.String()}, nil

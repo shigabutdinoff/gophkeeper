@@ -44,6 +44,7 @@ func TestOfflineRoutes(t *testing.T) {
 		"вход без базы":              {http.MethodPost, "/auth/v1/token?grant_type=password", "service-key", creds, http.StatusInternalServerError, "unexpected_failure"},
 		"адрес не по форме":          {http.MethodPost, "/auth/v1/signup", "app-key", `{"email":"anna","password":"ключ"}`, http.StatusBadRequest, "validation_failed"},
 		"ключ входа длиннее 72 байт": {http.MethodPost, "/auth/v1/signup", "app-key", `{"email":"anna@example.com","password":"` + strings.Repeat("я", 37) + `"}`, http.StatusBadRequest, "validation_failed"},
+		"адрес длиннее 254 знаков":   {http.MethodPost, "/auth/v1/signup", "app-key", `{"email":"` + strings.Repeat("a", 250) + `@example.com","password":"ключ"}`, http.StatusBadRequest, "validation_failed"},
 		"продление без базы":         {http.MethodPost, "/auth/v1/token?grant_type=refresh_token", "app-key", `{"refresh_token":"x"}`, http.StatusInternalServerError, "unexpected_failure"},
 		"выход без базы":             {http.MethodPost, "/auth/v1/logout?scope=local", "app-key", "", http.StatusBadRequest, "validation_failed"},
 		"без ключа проекта":          {http.MethodPost, "/auth/v1/signup", "", creds, http.StatusUnauthorized, ""},

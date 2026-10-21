@@ -21,7 +21,7 @@ func showList(c *cobra.Command, o online, note string) error {
 	head := ""
 	if err != nil {
 		head = "сервер недоступен, показаны только неотправленные записи\n"
-		if kept, kerr := readCopy(o); kerr == nil {
+		if kept, kerr := readCopy(c, o); kerr == nil {
 			list, head = kept, copyMark+"\n"
 		}
 	}

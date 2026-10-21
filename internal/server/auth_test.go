@@ -64,10 +64,7 @@ func TestRefusals(t *testing.T) {
 		"адрес не по форме":          func() (int, string) { return r.signup(t, "anna.example.com", password) },
 		"пустой ключ входа":          func() (int, string) { return r.signup(t, newEmail(), "") },
 		"ключ входа длиннее 72 байт": func() (int, string) { return r.signup(t, newEmail(), long) },
-		"адрес длиннее 254 знаков": func() (int, string) {
-			return r.signup(t, strings.Repeat("a", 250)+"@example.com", password)
-		},
-		"негодный JSON": func() (int, string) { return r.post(t, "/auth/v1/signup", "app-key", "не объект") },
+		"негодный JSON":              func() (int, string) { return r.post(t, "/auth/v1/signup", "app-key", "не объект") },
 		"тело больше предела": func() (int, string) {
 			s, b, _ := r.send(t, http.MethodPost, "/auth/v1/signup", "app-key", []byte(big))
 			return s, b
@@ -83,6 +80,9 @@ func TestRefusals(t *testing.T) {
 		assert.Contains(t, []string{"validation_failed", "unexpected_failure"}, parse(t, refusal).Code, "клиент покажет чужую ошибку: %s", name)
 		assert.Empty(t, parse(t, refusal).Access, "отказ выдал токен входа: %s", name)
 	}
+	got, refusal := r.signup(t, strings.Repeat("a", 250)+"@example.com", password)
+	assert.Equal(t, http.StatusBadRequest, got, "длинный адрес не отклонён как негодный: %s", refusal)
+	assert.Equal(t, "validation_failed", parse(t, refusal).Code, "код отказа длинному адресу не тот")
 	assert.Equal(t, 1, r.rows(t, ""), "отказы создали учётные записи")
 }
 
